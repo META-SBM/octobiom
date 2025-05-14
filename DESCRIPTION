@@ -1,0 +1,58 @@
+Package: octobiom
+Title: Metagenomic analysis
+Version: 0.0.0.9000
+Authors@R: 
+    person("Polina", "Kuzmichenko", , "kuzmichenko.p.a@gmail.com", role = c("aut", "cre"),
+           comment = c(ORCID = "0009-0006-3302-8677"))
+Description: What the package does (one paragraph).
+License: `use_mit_license()`, `use_gpl3_license()` or friends to pick a
+    license
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.2.9000
+Imports:
+    ggplot2,
+    glue,
+    microbiome,
+    patchwork,
+    phyloseq,
+    vegan,
+    microViz,
+    ggtext,
+    tibble,
+    stringr,
+    dplyr,
+    usethis,
+    speedyseq,
+    rstatix,
+    ggsignif,
+    ggpubr,
+    grid,
+    lemon,
+    gridExtra,
+    ggrepel,
+    utils,
+    ggdendro,
+    purrr,
+    dendextend,
+    scales,
+    ComplexHeatmap,
+    cowplot,
+    circlize,
+    igraph,
+    ggraph,
+    tidyr,
+    stats,
+    DESeq2,
+    rlang,
+    base,
+    magrittr,
+    ggforce
+Depends: 
+    R (>= 2.10)
+LazyData: true
+Suggests: 
+    knitr,
+    rmarkdown,
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3

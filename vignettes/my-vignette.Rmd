@@ -1,0 +1,301 @@
+---
+title: "my-vignette"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{my-vignette}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(octobiom)
+```
+#Load data
+Data for practice is collected in data folder. Let's load them.
+```{r}
+data(ps)
+force(ps)
+```
+#Palletes
+```{r}
+#The package provides several color palettes that can be both displayed and loaded into the environment. The user can also use their own color palettes
+octobiom::show_palette('set_10_2')
+color_palette <- octobiom::get_palette("set_10_2")
+knitr::include_graphics('./figures/palette.png',dpi=300)
+```
+#Metadata
+First, let's look at the distribution of the features of interest
+```{r,fig.height=8}
+#Let's get acquainted with the documentation of the function
+?octobiom::plot_metadata_distributions
+colnames(ps@sam_data)
+features <- c('bmi','bmi_group','age_at_baseline','age_group','sex',
+              "kidney.disease","chronic_bronchitis","smoking_status","YEAR",
+              "diabetes" ,"tuberculosis" )
+octobiom::plot_metadata_distributions(ps,features = features,color_palette = color_palette)
+#You can change number of rows and cols in  combined plot
+octobiom::plot_metadata_distributions(ps,features = features,color_palette = color_palette,nrow =3,ncol = 4)
+```
+#Prepare phyloseq
+```{r,fig.height=4,fig.width=1}
+#When working with tables we often need to preprocess the data.Microbial data are often transformed ( compositional,clr), but not necessarily. Rare taxa are also filtered out. The package includes the ability to adjust whether you filter the count data first or transform the data and then filter. Agglomeration of data to the required taxonomic level is done at the beginning
+#We'll do the filtering first, then we'll transform it.
+?octobiom::prepare_phyloseq
+knitr::include_graphics('./figures/pipeline_prepare_phyloseq.png',dpi=300)
+ps_obj <- octobiom::prepare_phyloseq(ps,transformation = 'compositional',detection = 10,prev = 0.05,taxonomic_level = 'Species',
+                                     first = 'filter')
+
+```
+#HEATMAP
+```{r,fig.height=12}
+#It is recommended to evaluate the structure of the data before analysis to exclude bad samples.Heatmap helps to estimate possible outliers and evaluate the structure of the data.
+ps_obj <- octobiom::prepare_phyloseq(ps,transformation = 'clr',detection = 10,prev = 0.05,taxonomic_level = 'Species',
+                                     first = 'filter')
+?octobiom::generate_microbiome_heatmap
+features <- c('bmi_group','age_group','sex',
+              "smoking_status","YEAR" )
+phylum_colors <- c(
+  'Euryarchaeota'              = "#001219" ,
+  'Thaumarchaeota'             = "#005f73" ,
+  'Actinobacteria'             = "#0a9396" ,
+  'Bacteria_unclassified'      = "#94d2bd" ,
+  'Bacteroidetes'              = "#e9d8a6" ,
+  'Candidatus_Melainabacteria' = "#ee9b00" ,
+  'Candidatus_Saccharibacteria'= "#ca6702" ,
+  'Firmicutes'                 = "#bb3e03" ,
+  'Fusobacteria'               = "#ae2012" ,
+  'Lentisphaerae'              = "#9b2226" ,
+  'Proteobacteria'             = '#F55B66' ,
+  'Synergistetes'              = '#ACACAC' ,
+  'Tenericutes'                = '#5CD5DA' ,
+  'Verrucomicrobia'            = '#0089DF' ,
+  'Ascomycota'                 = '#19427D'
+)
+YEAR_colors <- c(
+  '2017' = "#D5B3FF",
+  '2022' = "#FBD960"
+)
+bmi_colors <- c(
+  'Lean' = "#FF8400",
+  'Overweight' = "#3C096C",
+  'Obesity' = "#FF0A54"
+)
+age_colors <- c(
+  '37-45'='#48cae4',#blue
+  '46-55' = '#a24f7c' ,
+  '56-65'='#ff6b35',#orange
+  '65+' = '#ef233c' #red
+)
+sex_colors <- c(
+    'female'='#ff5c8a',
+    'male' = '#0466c8'
+  )
+smoking_status_colors <- c(
+  'Never a smoker' = '#a7c957',
+  'No, ex-smoker' = '#b80c09',
+  "Yes, a current smoker" = '#0b4f6c'
+)
+
+octobiom::generate_microbiome_heatmap(ps_obj,tax_level_annotation = 'Phylum',features = features,
+                                      tax_colors = list('Phylum' = phylum_colors),
+                                               feature_colors = list('YEAR' = YEAR_colors,'bmi_group' = bmi_colors,
+                                                                     'age_group' = age_colors,'sex' = sex_colors,
+                                                                     'smoking_status' = smoking_status_colors))
+```
+#Retention taxa
+```{r}
+#Let's estimate how many bacilli remain at different filtrations
+#Such graphs are frequently plotted based on compositional data; however, it is not impossible to apply an alternative transformation. The function performs a filtration of the prevalence and detection values, and subsequently draws the remaining number of taxa.
+ps_obj <- octobiom::prepare_phyloseq(ps, transformation = 'compositional',detection = 0, prevalence= 0,
+                                     taxonomic_level = 'Species', first = 'filter')
+det <- c(0, 0.025,0.05,0.075,0.1)/100
+prevalences <- seq(.1, 0.9, .1)
+
+octobiom::retention_plot(phyloseq = ps_obj,detection_values = det, prevalence_values = prevalences,
+                         prevalence_colors = get_palette('set_10_4'))
+
+```
+#PERMANOVA
+```{r,fig.width=10,fig,fig.height=5}
+#To estimate the contribution of metadata to the variance variation, we will use the PERMANOVA test
+?plot_permanova
+ps_obj <- octobiom::prepare_phyloseq(ps,transformation = 'compositional',detection = 10,prev = 0.05,taxonomic_level = 'Species',
+                                     first = 'filter')
+formula <- 'YEAR + bmi_group + age_group + sex + smoking_status'
+#For the function to work correctly, you need to define attributes in a category and create a technical column
+cols_meta <- data.frame(
+  category = c('sociodemographic','sociodemographic','sociodemographic','behavioral\n factors','technical'), 
+  row.names = c("sex",'age_group','bmi_group','smoking_status','YEAR'))
+cols_meta$new_name <- rownames(cols_meta)
+category_order <- c('comorbidities','sociodemographic','behavioral\n factors','technical')
+
+# Reorder the factor levels in cols_meta
+cols_meta$category <- factor(cols_meta$category, levels = category_order)
+octobiom::show_palette('set_10_3')
+color_palette <- octobiom::get_palette("set_10_3")
+permanova_results <- octobiom::plot_permanova(ps_obj,formula = formula, method = 'bray',cols_meta = cols_meta,palette = color_palette )
+permanova_results
+```
+#Alpha
+```{r}
+ps_obj <- octobiom::prepare_phyloseq(ps,transformation = 'compositional',detection = 100,prev = 0.05,taxonomic_level = 'Species',
+                                     first = 'filter')
+?octobiom::create_alpha_plots
+#Let's analyze alpha diversity
+features <- c('bmi_group','age_group','sex',
+              "smoking_status","YEAR" )
+color_palette <- octobiom::get_palette("set_10_4")
+plot_alpha_list <- purrr::map(features, ~ {
+  tryCatch({
+    octobiom::create_alpha_plots(ps_obj, col= .x, colors = color_palette)
+  }, error = function(e) {
+    message(paste("Error in method:", .x))
+    message(e$message)  # Print the error message
+    return(NULL)  # Return NULL for this iteration
+  })
+})
+plot_alpha_list
+```
+#Beta
+```{r,fig.height=5}
+ps_obj <- octobiom::prepare_phyloseq(ps,transformation = 'clr',detection = 10,prev = 0.1,taxonomic_level = 'Species',
+                                     first = 'filter')
+?octobiom::create_ordination_plots
+#Let's analyze beta diversity
+features <- c('bmi_group','age_group','sex',
+              "smoking_status","YEAR" )
+color_palette <- octobiom::get_palette("set_10_4")
+plot_beta_list <- purrr::map(features, ~ {
+  tryCatch({
+    octobiom::create_ordination_plots(ps_obj, group= .x, 
+                                      distance_method = "euclidean",palette = color_palette,taxa_plot = FALSE)
+  }, error = function(e) {
+    message(paste("Error in method:", .x))
+    message(e$message)  # Print the error message
+    return(NULL)  # Return NULL for this iteration
+  })
+})
+plot(plot_beta_list[[1]])
+plot(plot_beta_list[[2]])
+plot(plot_beta_list[[3]])
+plot(plot_beta_list[[4]])
+plot(plot_beta_list[[5]])
+
+```
+#stacked barplot hierarchical
+```{r,fig.height=8}
+ps_obj <- octobiom::prepare_phyloseq(ps,transformation = 'compositional',detection = 10,prev = 0.1,taxonomic_level = 'Species',
+                                     first = 'filter')
+?octobiom::barplot_hierarchical
+#Creates a stacked barplot of taxonomic compositions with hierarchical clustering dendrogram and sample metadata annotations for top taxa.
+features <- c('bmi_group','age_group','sex',"YEAR" )
+color_palette <- octobiom::get_palette("set_20_2")
+color_palette <- c('white',color_palette)
+colors_annotation <- list('YEAR' = YEAR_colors,'bmi_group' = bmi_colors,
+                                                                     'age_group' = age_colors,'sex' = sex_colors)
+octobiom::barplot_hierarchical(ps_obj,taxrank="Species", top = 20, feature = features,
+                                      dist = 'bray',colors_barplot = color_palette,
+                                   colors_annotation = colors_annotation,decreasing = T,
+                                   size = c(0.5,0.2,0.2,0.2,0.2,5))
+
+```
+#correlation between features and taxa
+```{r,fig.height=4}
+?octobiom::prepare_phyloseq
+
+ps_obj <- octobiom::prepare_phyloseq(ps,transformation = 'clr',detection = 10,prev = 0.10,taxonomic_level = 'Species',
+                                     first = 'filter')
+
+feature_colors <- c(
+  "age_at_baseline" = "#ff9999",
+  "bmi" = "#99ccff"
+)
+?build_multi_correlation_network
+network_correlation_results <- octobiom::build_multi_correlation_network(
+  ps_obj,
+  features = c("age_at_baseline", "bmi"),
+  tax_rank = "Species",
+  cor_method = 'pearson',
+  feature_colors = feature_colors
+)
+network_correlation_results
+```
+#Differential analysis
+```{r,fig.height=5}
+library(DESeq2)
+library(phyloseq)
+#Let's apply differential abundance analysis using the DESEq2 tool
+#Prepare dataset. We need count data.
+ps_obj <- octobiom::prepare_phyloseq(ps,transformation = 'NONE',detection = 10, prevalence = 0.15,taxonomic_level = 'Species',first = 'filter')
+ps_obj@sam_data$bmi_group <- factor(ps_obj@sam_data$bmi_group,levels = c('Lean','Overweight','Obesity'))
+ps_obj@sam_data$age_group <- ifelse(ps_obj@sam_data$age_at_baseline <= 36, 'less_36',
+                                    ifelse(ps_obj@sam_data$age_at_baseline <= 45, '37and45',
+                                           ifelse(ps_obj@sam_data$age_at_baseline <= 55, '46and55',
+                                                  ifelse(ps_obj@sam_data$age_at_baseline <= 65, '56and65',
+                                                         '65more'))))
+diagdds <- phyloseq::phyloseq_to_deseq2(ps_obj ,~ age_group)
+diagdds <- DESeq(diagdds, test="Wald", fitType="parametric", sfType = "poscounts")
+
+contrasts <- list(
+  c('age_group', '46and55', '37and45'),
+  c('age_group', '56and65', '37and45'),
+  c('age_group', '65more', '37and45')
+)
+resultsNames(diagdds)
+?octobiom::create_sigtab
+sigtabs_list <- list()
+sigtabs_list <- lapply(contrasts, function(contrast) {
+  tryCatch(
+    octobiom::create_sigtab(ps_obj, diagdds, contrast),
+    error = function(e) {
+      message(paste("Error processing contrast:", paste(contrast, collapse = " vs "), " - ", e$message))
+      return(NULL)
+    }
+  )
+})
+
+identical(sort(taxa_names(ps_obj)), sort(rownames(diagdds)))
+combined_df <- do.call(rbind, sigtabs_list)
+?octobiom::create_comparison_plots
+combined_df
+?octobiom::calculate_abundance_stats
+
+comparison_names <- unique(combined_df$comparison)
+
+age_colors <- c(
+  '37and45'='#48cae4',#blue
+  '46and55' = '#a24f7c' ,
+  '56and65'='#ff6b35',#orange
+  '65more' = '#ef233c' #red
+)
+plot_diff_list <- purrr::map(comparison_names, ~ {
+  tryCatch({
+    octobiom::create_comparison_plots(data = combined_df, comparison_name = .x, group_var_abund_prev = "age_group",
+                                                group_var_fold_change = "Phylum",
+                                                ps_obj = ps_obj,
+                                                group_colors_abund_prev =  age_colors,
+                                                group_colors_fold_change = phylum_colors)
+  }, error = function(e) {
+    message(paste("Error in method:", .x))
+    message(e$message)  # Print the error message
+    return(NULL)  # Return NULL for this iteration
+  })
+})
+plot_diff_list
+
+```
+#Prevalence-abundance plot
+```{r,fig.height=8}
+#For some narrow tasks, it may be necessary to estimate a representation of bacteria in group.A plot can be constructed showing the prevalence of the bacterium in the group and its abundance
+ps_obj <- octobiom::prepare_phyloseq(ps,transformation = 'compositional',detection = 10,prev = 0.05,taxonomic_level = 'Species',first = 'filter')
+?octobiom::prevalence_abundance_plot
+octobiom::prevalence_abundance_plot(ps_obj,top_n=15,zoom_plot = F,line_color = octobiom::get_palette("set_2_1")[1],
+                                    point_color = octobiom::get_palette("set_2_1")[2])
+```
