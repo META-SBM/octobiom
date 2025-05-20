@@ -65,7 +65,7 @@ create_sigtab <- function(ps_obj, diagdds, contrast, alpha = 0.05, minlfc = 1, m
 
   if (nrow(sigtab) == 0) {
     message(paste("No significant taxa found for contrast:",
-                  paste(contrast, collapse = " vs ")))
+                  paste0(contrast, collapse = "_")))
     return(NULL)
   }
 
@@ -87,7 +87,7 @@ create_sigtab <- function(ps_obj, diagdds, contrast, alpha = 0.05, minlfc = 1, m
   # Sort and format results
   sigtab <- sigtab[order(sigtab$log2FoldChange), ]
   asv_sigtab <- as.data.frame(sigtab)
-  asv_sigtab$comparison <- paste(contrast[2], "vs", contrast[3])
+  asv_sigtab$comparison <- paste0(contrast[2], "_", contrast[3])
   asv_sigtab$group1 <- contrast[2]
   asv_sigtab$group2 <- contrast[3]
 
@@ -223,7 +223,7 @@ calculate_abundance_stats <- function(ps_obj, taxa_names, group_var = "bmi_group
 #' @importFrom scales percent_format
 #' @importFrom ggpubr ggarrange
 #' @export
-create_comparison_plots <- function(data,
+create_comparison_barplot <- function(data,
                                     comparison_name,
                                     size = 12,
                                     group_var_fold_change = "Phylum",
@@ -251,6 +251,7 @@ create_comparison_plots <- function(data,
     message(paste("No data found for comparison:", comparison_name))
     return(NULL)
   }
+
 
   # Get abundance data
   abundance_data <- calculate_abundance_stats(
@@ -378,4 +379,285 @@ create_comparison_plots <- function(data,
     )
 
   return(list(prevalence_df,combined_plot,plot_data_full))
+}
+#' Create Comparative Heatmap with Abundance and Prevalence Annotations
+#'
+#' Generates a complex heatmap comparing coefficients from different models with
+#' abundance and prevalence annotations. The function handles data from DESeq2 and
+#' Maaslin2, ensures consistent effect directions, and provides customizable
+#' visualizations.
+#'
+#' @param data_deseq Dataframe containing DESeq2 results (must include Taxon, coef,
+#' model, padj, signif columns).
+#' @param data_maaslin Dataframe containing Maaslin2 results (same structure as data_deseq).
+#' @param ref_group Character string specifying the reference group.
+#' @param comp_group Character string specifying the comparison group.
+#' @param taxa_level Character string specifying the taxonomic level to analyze (e.g., "Species").
+#' @param ps_obj Phyloseq object containing microbial abundance data.
+#' @param group_var_abund_prev Character string specifying grouping variable for abundance/prevalence plots.
+#' @param comparison_name Character string for plot title.
+#' @param group_colors_abund_prev Named vector of colors for groups (optional).
+#' @param color_low Hex color for negative coefficients (default: "#45CAFF").
+#' @param color_mid Hex color for zero coefficients (default: "white").
+#' @param color_high Hex color for positive coefficients (default: "#DE3163").
+#' @param text_size Base text size for plots (default: 9).
+#' @param pvalue_digits Number of digits for p-value formatting (default: 2).
+#' @param heatmap_height Height of heatmap in cm (default: 10).
+#' @param heatmap_width Width of heatmap in cm (default: 7).
+#' @param number_model_true Threshold for minimum non-zero models required per taxon (default: 2).
+#'
+#' @return A list containing:
+#' \itemize{
+#'   \item heatmap_plot - Combined plot as ggplot object
+#'   \item heatmap_obj - Raw ComplexHeatmap object for further customization
+#' }
+#'
+#' @examples
+#' \dontrun{
+#' result <- create_comparison_heatmap(
+#'   data_deseq = deseq_results,
+#'   data_maaslin = maaslin_results,
+#'   ref_group = "Control",
+#'   comp_group = "Treatment",
+#'   taxa_level = "Species",
+#'   ps_obj = phyloseq_data,
+#'   group_var_abund_prev = "Group",
+#'   comparison_name = "Control vs Treatment"
+#' )
+#' print(result[[1]])  # Display the plot
+#' }
+#'
+#' @importFrom ComplexHeatmap Heatmap draw anno_barplot rowAnnotation
+#' @importFrom circlize colorRamp2
+#' @importFrom grid grid.grabExpr gpar grid.text unit
+#' @importFrom cowplot plot_grid
+#' @importFrom ggplot2 ggplot aes geom_boxplot scale_fill_manual coord_flip labs
+#' theme_bw theme element_text element_blank
+#' @importFrom dplyr select mutate filter group_by summarise case_when all_of sym
+#' @importFrom tidyr pivot_wider
+#' @importFrom tibble column_to_rownames
+#' @importFrom scales hue_pal percent_format
+#' @importFrom phyloseq taxa_names
+#' @export
+create_comparison_heatmap <- function(data_deseq,
+                                      data_maaslin,
+                                      ref_group,
+                                      comp_group,
+                                      taxa_level,
+                                      ps_obj,
+                                      group_var_abund_prev,
+                                      comparison_name,
+                                      group_colors_abund_prev = NULL,
+                                      color_low = "#45CAFF",
+                                      color_mid = "white",
+                                      color_high = "#DE3163",
+                                      text_size = 9,
+                                      pvalue_digits = 2,
+                                      heatmap_height = 10,
+                                      heatmap_width = 7,
+                                      number_model_true = 2
+                                      ) {
+  if (missing(data_deseq) || missing(data_maaslin) || missing(ref_group) ||
+      missing(comp_group) || missing(taxa_level) || missing(ps_obj) ||
+      missing(group_var_abund_prev) || missing(comparison_name)) {
+    stop("Required arguments are missing")
+  }
+  data_deseq_filtered <- data_deseq %>%
+    dplyr::filter(comparison == comparison_name)
+  data_maaslin_filtered <- data_maaslin %>%
+    dplyr::filter(comparison == comparison_name)
+
+  # Data Preparation and Direction Consistency ----
+  final_df <- rbind(data_deseq_filtered, data_maaslin_filtered)
+
+  final_df_clean <- final_df %>%
+    dplyr::mutate(
+      coef = dplyr::case_when(
+        reference_group == ref_group & comparison_group == comp_group ~ coef,
+        reference_group == comp_group & comparison_group == ref_group ~ -coef,
+        TRUE ~ coef
+      ),
+      reference_group = ref_group,
+      comparison_group = comp_group
+    )
+
+
+  # Create Coefficient Matrix ----
+  coef_matrix <- final_df_clean %>%
+    dplyr::select(dplyr::all_of(taxa_level), model, coef) %>%
+    tidyr::pivot_wider(names_from = model, values_from = coef) %>%
+    tibble::column_to_rownames(taxa_level) %>%
+    as.matrix()
+
+  coef_matrix[is.na(coef_matrix)] <- 0
+  #zero_counts <- apply(coef_matrix, 1, function(x) sum(x == 0, na.rm = TRUE))
+
+  if (number_model_true == 0) {
+    # Only keep rows with ALL non-zero values
+    coef_matrix <- coef_matrix[rowSums(coef_matrix != 0) == ncol(coef_matrix), , drop = FALSE]
+  } else {
+    # Original logic for other cases
+    zero_counts <- rowSums(coef_matrix == 0, na.rm = TRUE)
+    coef_matrix <- coef_matrix[zero_counts <= number_model_true, , drop = FALSE]
+  }
+
+  if (nrow(coef_matrix) == 0) {
+    stop("No taxa passed the filtering criteria. Adjust number_model_true or check your data.")
+  }
+
+  row_means <- rowMeans(coef_matrix, na.rm = TRUE)
+  taxa_order <- names(sort(row_means, decreasing = TRUE))
+  coef_matrix <- coef_matrix[taxa_order, , drop = FALSE]
+  # Create Annotation Matrix ----
+  annotation_matrix <- final_df_clean %>%
+    dplyr::mutate(
+      formatted_padj = ifelse(
+        padj < 0.001,
+        "<0.001",
+        format.pval(padj, digits = pvalue_digits, eps = 0.001)
+      ),
+      cell_text = sprintf(
+        "%.2f %s (p = %s)",  # Replaced \t with spaces
+        coef,
+        signif,
+        formatted_padj
+      )
+    ) %>%
+    dplyr::select(dplyr::all_of(taxa_level), model, cell_text) %>%
+    tidyr::pivot_wider(names_from = model, values_from = cell_text) %>%
+    tibble::column_to_rownames(taxa_level) %>%
+    as.matrix()
+  annotation_matrix <- annotation_matrix[taxa_order, , drop = FALSE]
+
+  phyloseq::taxa_names(ps_obj) <- ps_obj@tax_table[,taxa_level]
+  # Abundance and Prevalence Calculations ----
+  abundance_data <- calculate_abundance_stats(
+    ps_obj = ps_obj,
+    taxa_names = final_df_clean[[taxa_level]],
+    group_var = group_var_abund_prev
+  )
+
+  plot_data_full <- abundance_data %>%
+    dplyr::filter(!!dplyr::sym(group_var_abund_prev) %in% c(ref_group, comp_group)) %>%
+    dplyr::mutate(Taxon = factor(Taxon, levels = taxa_order))
+
+  # Create Visualization Components ----
+  if (is.null(group_colors_abund_prev)) {
+    unique_groups <- unique(plot_data_full[[group_var_abund_prev]])
+    group_colors_abund_prev <- scales::hue_pal()(length(unique_groups))
+    names(group_colors_abund_prev) <- unique_groups
+  }
+  annotation_colors <- group_colors_abund_prev[c(ref_group, comp_group)]
+
+  plot_data_full <- abundance_data %>%
+    dplyr::filter(!!dplyr::sym(group_var_abund_prev) %in% c(ref_group, comp_group)) %>%
+    dplyr::mutate(Taxon = factor(Taxon, levels = taxa_order))
+
+  abund_data <- plot_data_full %>%
+    dplyr::filter(!is.na(Taxon)) %>%
+    #dplyr::mutate(Abundance = log10(.data$Abundance + 0.00001)) %>%
+    dplyr::select(Taxon, !!dplyr::sym(group_var_abund_prev), Abundance) %>%
+    tidyr::pivot_wider(
+      names_from = !!dplyr::sym(group_var_abund_prev),
+      values_from = Abundance,
+      values_fn = list(Abundance = mean)
+    ) %>%
+    tibble::column_to_rownames("Taxon") %>%
+    as.data.frame()
+  abund_data <- abund_data[taxa_order, , drop = FALSE]
+  prev_data <- plot_data_full %>%
+    dplyr::filter(!is.na(Taxon)) %>%
+    dplyr::group_by(Taxon, !!dplyr::sym(group_var_abund_prev)) %>%
+    dplyr::summarise(
+      Prevalence = sum(.data$Abundance > 0) / dplyr::n(),
+      .groups = "drop"
+    ) %>%
+    tidyr::pivot_wider(
+      names_from = !!dplyr::sym(group_var_abund_prev),
+      values_from = Prevalence
+    ) %>%
+    tibble::column_to_rownames("Taxon") %>%
+    as.data.frame()
+  prev_data <- prev_data[taxa_order, , drop = FALSE]
+
+  # Create Heatmap with annotations ----
+
+  ra <- ComplexHeatmap::rowAnnotation(
+    Mean_abundance = ComplexHeatmap::anno_barplot(
+      abund_data,
+      which = "row",
+      width = grid::unit(3, "cm"),
+      gp = grid::gpar(fill = annotation_colors),
+      axis_param = list(side = "bottom"),beside = TRUE, attach = TRUE
+    ),
+    Empty= ComplexHeatmap::anno_empty(  # Spacer between annotations
+      width = grid::unit(0.5, "cm"),
+      which = "row"
+    ),
+    Prevalence = ComplexHeatmap::anno_barplot(
+      prev_data,
+      which = "row",
+      width = grid::unit(3, "cm"),
+      beside = TRUE, attach = TRUE,
+      gp = grid::gpar(fill = annotation_colors)
+    ),
+    show_annotation_name = TRUE,
+    annotation_name_rot = 0,
+    annotation_name_side = "top",
+    annotation_legend_param = list(
+      title = group_var_abund_prev,
+      labels = names(annotation_colors),
+      legend_gp = gpar(fill = annotation_colors)
+    )
+  )
+
+  heatmap_obj <- ComplexHeatmap::Heatmap(
+    coef_matrix,
+    name = "Coef",
+    col = circlize::colorRamp2(
+      c(min(coef_matrix, na.rm = TRUE), 0, max(coef_matrix, na.rm = TRUE)),
+      c(color_low, color_mid, color_high)
+    ),
+    cell_fun = function(j, i, x, y, width, height, fill) {
+      grid::grid.text(
+        annotation_matrix[i, j],
+        x = x,
+        y = y,
+        gp = grid::gpar(fontsize = text_size/2, col = "black"),
+        just = "centre"
+      )
+    },
+    right_annotation = ra,
+    row_names_side = "left",
+    row_names_gp = gpar(fontsize = text_size,fontface = "italic",color='black',linewidth = 1.2),
+    column_names_rot = 45,
+    cluster_rows = FALSE,
+    cluster_columns = FALSE,
+    show_row_names = TRUE,
+    show_column_names = TRUE,
+    row_order = rev(taxa_order),
+    heatmap_legend_param = list(title = "Effect size",direction = "horizontal"),
+    column_title = comparison_name,
+    column_title_gp = grid::gpar(fontsize = text_size + 2, fontface = "bold"),
+    width = unit(heatmap_width, "cm"),
+    height = unit(heatmap_height, "cm"),
+  )
+  annotation_legend <- Legend(
+    title = group_var_abund_prev,
+    at = names(annotation_colors),
+    legend_gp = gpar(fill = annotation_colors),
+    direction = "vertical",
+    labels_gp = gpar(fontsize = text_size)
+  )
+
+  heatmap_grob <- grid::grid.grabExpr({
+    ComplexHeatmap::draw(heatmap_obj,heatmap_legend_side = "top", annotation_legend_side = "top",
+                         annotation_legend_list = list(annotation_legend), merge_legend = TRUE)
+  })
+  heatmap_plot <- cowplot::plot_grid(heatmap_grob)
+  return(list(
+    heatmap_plot = heatmap_plot,
+    heatmap_obj = heatmap_obj
+  ))
+
 }

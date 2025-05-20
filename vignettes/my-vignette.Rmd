@@ -1,20 +1,9 @@
 ---
-title: "my-vignette"
-output: rmarkdown::html_vignette
-vignette: >
-  %\VignetteIndexEntry{my-vignette}
-  %\VignetteEngine{knitr::rmarkdown}
-  %\VignetteEncoding{UTF-8}
+title: "My_Vignette_Title"
+output: html_document
 ---
 
-```{r, include = FALSE}
-knitr::opts_chunk$set(
-  collapse = TRUE,
-  comment = "#>"
-)
-```
-
-```{r setup}
+```{r}
 library(octobiom)
 ```
 #Load data
@@ -31,11 +20,10 @@ color_palette <- octobiom::get_palette("set_10_2")
 knitr::include_graphics('./figures/palette.png',dpi=300)
 ```
 #Metadata
-First, let's look at the distribution of the features of interest
 ```{r,fig.height=8}
 #Let's get acquainted with the documentation of the function
+#First, let's look at the distribution of the features of interest
 ?octobiom::plot_metadata_distributions
-colnames(ps@sam_data)
 features <- c('bmi','bmi_group','age_at_baseline','age_group','sex',
               "kidney.disease","chronic_bronchitis","smoking_status","YEAR",
               "diabetes" ,"tuberculosis" )
@@ -48,9 +36,8 @@ octobiom::plot_metadata_distributions(ps,features = features,color_palette = col
 #When working with tables we often need to preprocess the data.Microbial data are often transformed ( compositional,clr), but not necessarily. Rare taxa are also filtered out. The package includes the ability to adjust whether you filter the count data first or transform the data and then filter. Agglomeration of data to the required taxonomic level is done at the beginning
 #We'll do the filtering first, then we'll transform it.
 ?octobiom::prepare_phyloseq
+ps_obj <- octobiom::prepare_phyloseq(ps,transformation = 'compositional',detection = 10,prev = 0.05,taxonomic_level = 'Species',first = 'filter')
 knitr::include_graphics('./figures/pipeline_prepare_phyloseq.png',dpi=300)
-ps_obj <- octobiom::prepare_phyloseq(ps,transformation = 'compositional',detection = 10,prev = 0.05,taxonomic_level = 'Species',
-                                     first = 'filter')
 
 ```
 #HEATMAP
@@ -144,24 +131,35 @@ permanova_results <- octobiom::plot_permanova(ps_obj,formula = formula, method =
 permanova_results
 ```
 #Alpha
-```{r}
+```{r,fig.height=5}
 ps_obj <- octobiom::prepare_phyloseq(ps,transformation = 'compositional',detection = 100,prev = 0.05,taxonomic_level = 'Species',
                                      first = 'filter')
 ?octobiom::create_alpha_plots
 #Let's analyze alpha diversity
-features <- c('bmi_group','age_group','sex',
-              "smoking_status","YEAR" )
+features <- c('bmi_group','age_group')#,'sex',
+              #"smoking_status","YEAR" )
 color_palette <- octobiom::get_palette("set_10_4")
 plot_alpha_list <- purrr::map(features, ~ {
   tryCatch({
-    octobiom::create_alpha_plots(ps_obj, col= .x, colors = color_palette)
+    octobiom::create_alpha_plots(ps_obj, col= .x, colors = color_palette,measure = c("Shannon",'Simpson'))
   }, error = function(e) {
     message(paste("Error in method:", .x))
     message(e$message)  # Print the error message
     return(NULL)  # Return NULL for this iteration
   })
 })
-plot_alpha_list
+plot_alpha_list_chao <- purrr::map(features, ~ {
+  tryCatch({
+    octobiom::create_alpha_plots(ps, col= .x, colors = color_palette,measure = c("Chao1"))
+  }, error = function(e) {
+    message(paste("Error in method:", .x))
+    message(e$message)  # Print the error message
+    return(NULL)  # Return NULL for this iteration
+  })
+})
+plot_alpha_list_chao
+
+ggpubr::ggarrange(plot_alpha_list[[1]]$plots,plot_alpha_list_chao[[1]]$plots,widths = c(2,1))
 ```
 #Beta
 ```{r,fig.height=5}
@@ -227,7 +225,7 @@ network_correlation_results <- octobiom::build_multi_correlation_network(
 )
 network_correlation_results
 ```
-#Differential analysis
+#Differential analysis DESEQ2
 ```{r,fig.height=5}
 library(DESeq2)
 library(phyloseq)
@@ -240,13 +238,18 @@ ps_obj@sam_data$age_group <- ifelse(ps_obj@sam_data$age_at_baseline <= 36, 'less
                                            ifelse(ps_obj@sam_data$age_at_baseline <= 55, '46and55',
                                                   ifelse(ps_obj@sam_data$age_at_baseline <= 65, '56and65',
                                                          '65more'))))
-diagdds <- phyloseq::phyloseq_to_deseq2(ps_obj ,~ age_group)
+diagdds <- phyloseq::phyloseq_to_deseq2(ps_obj ,~ bmi_group)
 diagdds <- DESeq(diagdds, test="Wald", fitType="parametric", sfType = "poscounts")
 
+#contrasts <- list(
+#  c('age_group', '46and55', '37and45'),
+#  c('age_group', '56and65', '37and45'),
+#  c('age_group', '65more', '37and45')
+#)
 contrasts <- list(
-  c('age_group', '46and55', '37and45'),
-  c('age_group', '56and65', '37and45'),
-  c('age_group', '65more', '37and45')
+  c('bmi_group', 'Lean', 'Overweight'),
+  c('bmi_group', 'Lean', 'Obesity'),
+  c('bmi_group', 'Overweight', 'Obesity')
 )
 resultsNames(diagdds)
 ?octobiom::create_sigtab
@@ -266,6 +269,8 @@ combined_df <- do.call(rbind, sigtabs_list)
 ?octobiom::create_comparison_plots
 combined_df
 ?octobiom::calculate_abundance_stats
+
+
 
 comparison_names <- unique(combined_df$comparison)
 
@@ -298,4 +303,87 @@ ps_obj <- octobiom::prepare_phyloseq(ps,transformation = 'compositional',detecti
 ?octobiom::prevalence_abundance_plot
 octobiom::prevalence_abundance_plot(ps_obj,top_n=15,zoom_plot = F,line_color = octobiom::get_palette("set_2_1")[1],
                                     point_color = octobiom::get_palette("set_2_1")[2])
+```
+#Maaslin + Heatmap
+```{r,fig.height=6}
+ps_obj <- octobiom::prepare_phyloseq(ps,transformation = 'NONE',detection = 10, prevalence = 0.15,taxonomic_level = 'Species',first = 'filter')
+
+?octobiom::process_maaslin
+# Define methods
+
+?process_maaslin
+methods <- list(
+  list(analysis_method = "CPLM", normalization = "TSS", transform = "NONE")#,
+  #list(analysis_method = "LM", normalization = "TMM", transform = "LOG"),
+  #list(analysis_method = "NEGBIN", normalization = "NONE", transform = "AST")
+)
+
+results <- process_maaslin(
+  ps_obj = ps,
+  comparison_group = "bmi_group",
+  methods = methods,
+  fixed_effects = c("bmi_group"),
+  reference = c("bmi_group", "Lean"),
+  ncores = 1,
+  output_dir = '/home/kuzmichenko_pa/maaslin_test/'
+)
+results <- read.csv('/home/kuzmichenko_pa/maaslin_results/results.csv')
+results
+comparison <- 'Lean_Obesity'
+comparison_group <- "Obesity"
+reference_group <- "Lean"
+tax_table <- as(phyloseq::tax_table(ps_obj),'data.frame')
+tax_table <- tax_table %>%
+  tibble::rownames_to_column('Taxon')
+
+unique_comparison <- unique(results$comparison)
+heatmap_results <- list()
+
+bmi_colors <- c(
+  'Lean' = "#FF8400",
+  'Overweight' = "#3C096C",
+  'Obesity' = "#FF0A54"
+)
+?create_comparison_heatmap
+
+for (current_comparison in unique_comparison) {
+  results_filtered <- results %>%
+    dplyr::filter(comparison == current_comparison)
+  results_filtered$comparison_group <- strsplit(current_comparison,split='_')[[1]][1]
+  results_filtered <- results_filtered %>%
+    dplyr::rename(reference_group = 'value',padj = 'qval',Taxon = 'feature') %>%
+    dplyr::left_join(tax_table , by = 'Taxon') %>%
+    dplyr::select(Taxon,coef,padj,model,reference_group,comparison_group,Species,comparison)
+  results_filtered$signif <- ifelse(
+    results_filtered$padj <= 0.001, "***",
+    ifelse(
+      results_filtered$padj <= 0.01, "**",
+      ifelse(results_filtered$padj <= 0.05, "*", "")
+    )
+  )
+  results_filtered <- results_filtered %>%
+    dplyr::filter(padj < 0.05)
+  combined_df_filtered <- combined_df %>%
+    dplyr::filter(comparison == current_comparison) %>%
+    dplyr::rename(reference_group = 'group1',comparison_group = 'group2') %>%
+    dplyr::select(Taxon,coef,model,comparison,signif,padj,Species,comparison_group,reference_group)
+  heatmap_results[[current_comparison]]<- octobiom::create_comparison_heatmap(data_deseq = combined_df_filtered,
+                                    data_maaslin = results_filtered,
+                                    ref_group = strsplit(current_comparison,split='_')[[1]][1],
+                                    comp_group = strsplit(current_comparison,split='_')[[1]][2],
+                                    taxa_level = 'Species',
+                                    ps_obj,
+                                    group_var_abund_prev = "bmi_group",
+                                    group_colors_abund_prev = bmi_colors,
+                                    comparison_name = current_comparison,
+                                    heatmap_height =14,
+                                    heatmap_width = 5,
+                                    number_model_true = 0
+                                    )
+  
+}
+
+
+heatmap_results
+
 ```

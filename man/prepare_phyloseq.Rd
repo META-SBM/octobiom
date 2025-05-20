@@ -9,11 +9,12 @@ prepare_phyloseq(
   transformation = "compositional",
   detection = 0,
   prevalence = 0.1,
+  agglomeration_flag = T,
   taxonomic_level = "Species",
   first = "transform",
   filter_column = NULL,
   filter_value = NULL,
-  filter_unclassified = T
+  flag_unclassified = T
 )
 }
 \arguments{
@@ -28,6 +29,8 @@ taxa presence}
 \item{prevalence}{Prevalence threshold
 (proportion of samples where taxa must be present; 0-1).}
 
+\item{agglomeration_flag}{If data agglomeration is required}
+
 \item{taxonomic_level}{Taxonomic level for aggregation (e.g., "Genus").}
 
 \item{first}{Parameter indicating that the data
@@ -37,7 +40,7 @@ is filtered or transformed the first.}
 
 \item{filter_value}{Value to filter by in filter_column (optional)}
 
-\item{filter_unclassified}{is flag to filter Kingdom == UNCLASSIFIED from MetaPhlAn}
+\item{flag_unclassified}{is flag to filter Kingdom == UNCLASSIFIED from MetaPhlAn}
 }
 \value{
 A processed phyloseq object with core taxa meeting criteria.
@@ -48,6 +51,6 @@ and core taxa filtering to a phyloseq object.
 }
 \examples{
 # ps <- prepare_table(phyloseq_obj, transformation = "compositional",
-#                    detection = 0.001, prevalence = 0.1,
+#                    detection = 0.001, prevalence = 0.1,agglomeration_flag = T,
 # taxonomic_level = "Genus", first = 'filter')
 }

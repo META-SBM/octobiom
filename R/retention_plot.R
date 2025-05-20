@@ -13,22 +13,21 @@
 #' @param prevalence_colors Character vector of colors for each prevalence level
 #'
 #' @return A ggplot object showing taxa retention patterns
-#' @export
+#'
 #'
 #' @examples
 #' # Example with mock data
-#' data(GlobalPatterns)
+#' data(ps)
 #' det_vals <- seq(0, 0.1, length.out = 5)
 #' prev_vals <- seq(0.1, 0.9, by = 0.2)
-#' colors <- viridis::viridis(length(prev_vals))
+#' colors <- c('red', 'orange', 'yellow', 'green', 'blue')
 #' p <- retention_plot(
-#'   phyloseq = GlobalPatterns,
+#'   phyloseq = ps,
 #'   detection_values = det_vals,
 #'   prevalence_values = prev_vals,
-#'   taxonomic_level = "Genus",
 #'   prevalence_colors = colors
 #' )
-#' print(p)
+#' @export
 retention_plot <- function(phyloseq,
                                   detection_values,
                                   prevalence_values,

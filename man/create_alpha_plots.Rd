@@ -7,10 +7,11 @@
 create_alpha_plots(
   ps_obj,
   col,
-  measure = "Shannon",
+  measures = c("Shannon"),
   method = "wilcox.test",
   colors,
-  size = 10
+  size = 10,
+  ncol = NULL
 )
 }
 \arguments{
@@ -18,16 +19,22 @@ create_alpha_plots(
 
 \item{col}{Character string specifying the metadata column to group by}
 
-\item{measure}{Alpha diversity measure to plot (default: 'Shannon')}
-
 \item{method}{Statistical test method (default: 'wilcox.test')}
+
+\item{colors}{Vector of colors for groups}
 
 \item{size}{Base font size for plot elements (default: 10)}
 
-\item{color}{Vector of colors for groups}
+\item{ncol}{Number of columns in the combined plot (default: length(measures)).}
+
+\item{measure}{Alpha diversity measure to plot (default: 'Shannon')}
 }
 \value{
-A ggplot object showing alpha diversity with statistical annotations
+A list containing:
+\itemize{
+\item \code{plots} - Combined ggplot object of all measures.
+\item \code{stats} - List of statistical results for each measure.
+}
 }
 \description{
 This function generates alpha diversity plots (e.g., Shannon index) from a phyloseq object
@@ -38,11 +45,12 @@ with jittered points and adds significance annotations.
 \dontrun{
 # Example usage:
 colors <- c("Group1" = "blue", "Group2" = "red")
-p <- create_alpha_plots(ps_obj = my_phyloseq,
-                       col = "Treatment",
-                       measure = "Shannon",
-                       color = colors,
-                       level_factors = c("Control", "Treatment"))
+result <- create_alpha_plots(
+  ps_obj = my_phyloseq,
+  col = "Treatment",
+  measures = c("Shannon", "Simpson"),
+  colors = colors
+)
 print(p)
 }
 

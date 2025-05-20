@@ -1,12 +1,3 @@
-library(phyloseq)
-library(ggplot2)
-library(patchwork)
-library(ggrepel)
-library(dplyr)
-library(argparse)
-library(ggforce)
-library(roxygen2)
-
 #' Generate Prevalence Comparison Plots for Time Points
 #'
 #' @param physeq A phyloseq object
@@ -21,31 +12,32 @@ library(roxygen2)
 #' @param height figure's height
 #' @param dpi figure's quality
 #' @return A list of ggplot objects for each time point comparison
-compare_prevalence_across_group <- function(physeq, time_column, top_n = 10,
+#' @export
+compare_prevalence_across_group <- function(physeq, column, top_n = 10,
                                            point_color = "#d5b3ff",
                                            smooth_color = "#d62828",
                                            text_size = 3,
                                            highlight_top = FALSE) {
   # Input validation
   if (!inherits(physeq, "phyloseq")) {
-    stop("Input must be a phyloseq object")
+    stop("❌ Input must be a phyloseq object")
   }
 
-  if (!time_column %in% colnames(sample_data(physeq))) {
-    stop("Time column not found in sample data")
+  if (!column %in% colnames(sample_data(physeq))) {
+    stop("❌ Column not found in sample data")
   }
   # Get unique time points
-  time_points <- unique(as.character(sample_data(physeq)[[time_column]]))
+  time_points <- unique(as.character(sample_data(physeq)[[column]]))
 
-  if (length(time_points) < 2) {
-    stop("Need at least 2 time points for comparison")
+  if (length(time_points) != 2) {
+    stop("❌ Need to  2 points for comparison")
   }
   # Calculate prevalence for each time point
   prevalence_list <- list()
   for (tp in time_points) {
     # Subset phyloseq for this time point
     metadata <- as(physeq@sam_data, "data.frame")
-    samples_tp <- rownames(metadata[metadata[[time_column]] == tp, ])
+    samples_tp <- rownames(metadata[metadata[[Column]] == tp, ])
     # Subsample phyloseq
     ps_sub <- prune_samples(samples_tp, physeq)
     # Calculate prevalence
@@ -175,79 +167,4 @@ compare_prevalence_across_group <- function(physeq, time_column, top_n = 10,
     plot_list[[paste(time1, "vs", time2)]] <- combined_plot
   }
   return(plot_list)
-}
-
-if (!interactive() && !exists("snakemake")) {
-  parser <- ArgumentParser(description = "Generate prevalence comparison
-                                          plots across time points")
-  parser$add_argument("--input", required = TRUE,
-                      help = "Input phyloseq RDS file")
-  parser$add_argument("--time_column", required = TRUE,
-                      help = "Column name with time points")
-  parser$add_argument("--output_dir", default = "prevalence",
-                      help = "Output file dir")
-  parser$add_argument("--top_n", type = "integer", default = 10,
-                      help = "Number of top taxa to label")
-  parser$add_argument("--point_color", default = "#d5b3ff",
-                      help = "Point color")
-  parser$add_argument("--smooth_color", default = "#d62828",
-                      help = "LOESS line color")
-  parser$add_argument("--text_size", type = "double", default = 3,
-                      help = "Label text size")
-  parser$add_argument("--width", type = "double", default = 12,
-                      help = "Plot width")
-  parser$add_argument("--height", type = "double", default = 6,
-                      help = "Plot height")
-  parser$add_argument("--dpi", type = "integer", default = 300,
-                      help = "Plot resolution")
-  parser$add_argument("--highlight_top", action = "store_true",
-                      help = "Create highlight for top 10 taxa")
-  args <- parser$parse_args()
-  phy <- readRDS(args$input)
-  highlight_top <- if (is.character(args$highlight_top)) {
-    as.logical(toupper(args$highlight_top))
-  } else {
-    args$highlight_top
-  }
-  # Execute the function
-  plots <- compare_prevalence_across_time(physeq = phy,
-                                          time_column = args$time_column,
-                                          top_n = args$top_n,
-                                          point_color =  args$point_color,
-                                          smooth_color = args$smooth_color,
-                                          text_size = args$text_size,
-                                          highlight_top = args$highlight_top)
-  for (name in names(plots)){
-    ggsave(paste0(args$output_dir, "/prevalence_",
-                  gsub(" ", "_", name), ".png"),
-           plots[[name]], width = 12, height = 6)
-  }
-}
-#Example
-#Rscript time_point_prevalence.R \
-#  --input ~/snakemake_project/phy_filtered.rds \
-#  --time_column YEAR \
-#  --output_dir ~/snakemake_project/figures  \
-#  --top_n 15 \
-#  --width 10 \
-#  --height 5
-# Разобраться с --highlight_top
-if (exists("snakemake")) {
-  # Read input data
-
-  phy <- readRDS(snakemake@input[["physeq"]])
-  # Create plot
-  plots <- compare_prevalence_across_time(physeq = phy,
-                                          time_column = snakemake@params[["time_column"]], # nolint
-                                          top_n = snakemake@params[["top_n"]],# nolint
-                                          point_color =  snakemake@params[["point_color"]],# nolint
-                                          smooth_color = snakemake@params[["smooth_color"]],# nolint
-                                          text_size = snakemake@params[["text_size"]],# nolint
-                                          highlight_top = snakemake@params[["highlight_top"]])# nolint
-  for (name in names(plots)){
-    ggsave(filename = snakemake@output[["figure_path"]],
-           plots[[name]], width = snakemake@params[["width"]],
-           height = snakemake@params[["height"]],
-           dpi = snakemake@params[["dpi"]])
-  }
 }

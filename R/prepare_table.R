@@ -15,22 +15,24 @@
 #' is filtered or transformed the first.
 #' @param filter_column Column name for sample filtering (optional)
 #' @param filter_value Value to filter by in filter_column (optional)
-#' @param filter_unclassified is flag to filter Kingdom == UNCLASSIFIED from MetaPhlAn
+#' @param agglomeration_flag If data agglomeration is required
+#' @param flag_unclassified is flag to filter Kingdom == UNCLASSIFIED from MetaPhlAn
 #' @return A processed phyloseq object with core taxa meeting criteria.
 #' @examples
 #' # ps <- prepare_table(phyloseq_obj, transformation = "compositional",
-#' #                    detection = 0.001, prevalence = 0.1,
+#' #                    detection = 0.001, prevalence = 0.1,agglomeration_flag = T,
 #' # taxonomic_level = "Genus", first = 'filter')
 #' @export
 prepare_phyloseq <- function(phyloseq,
                           transformation = "compositional",
                           detection = 0,
                           prevalence = 0.1,
+                          agglomeration_flag = T,
                           taxonomic_level = "Species",
                           first = "transform",
                           filter_column = NULL,
                           filter_value = NULL,
-                          filter_unclassified = T) {
+                          flag_unclassified = T) {
   # Input validation
   if (!inherits(phyloseq, "phyloseq")) {
     stop("Input must be a phyloseq object.")
@@ -64,13 +66,17 @@ prepare_phyloseq <- function(phyloseq,
     message("Filtered samples by ", filter_column, " == ", filter_value,
             ". Remaining samples: ", phyloseq::nsamples(phyloseq))
   }
-  # Taxonomic aggregation
-  phy_agg <- speedyseq::tax_glom(
-    physeq = phyloseq,
-    taxrank = taxonomic_level,
-    NArm = TRUE
-  )
-  if (filter_unclassified == T){
+  if (agglomeration_flag == T){
+    # Taxonomic aggregation
+    phy_agg <- speedyseq::tax_glom(
+      physeq = phyloseq,
+      taxrank = taxonomic_level,
+      NArm = TRUE
+    )
+  }else{
+    phy_agg <- phyloseq
+  }
+  if (flag_unclassified == T){
     phy_agg <- phyloseq::subset_taxa(phy_agg,Kingdom != "UNCLASSIFIED")
   }
   if ((first == "transform") & (transformation != 'NONE')) {

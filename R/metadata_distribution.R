@@ -36,7 +36,15 @@ plot_metadata_distributions <- function(physeq,
 
   # Create default color palette if not provided
   if (is.null(color_palette)) {
-    n_colors <- length(unique(unlist(purrr::map(meta_df, ~ if(is.factor(.)) levels(.) else NA))))
+    factor_levels <- meta_df %>%
+      select(where(is.factor)) %>%        # select only factor columns
+      map(levels) %>%                     # get levels of each factor column
+      flatten_chr()                      # flatten to a single character vector
+
+    # Count unique levels
+    n_colors <- length(unique(factor_levels))
+
+    # Create color palette
     color_palette <- scales::hue_pal()(n_colors)
   }
 

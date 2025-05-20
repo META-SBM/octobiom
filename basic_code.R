@@ -4,6 +4,7 @@ devtools::document()
 devtools::check()
 devtools::install()
 
+
 library(octobiom)
 ps <- readRDS('~/core_microbiome/data/metaphlan.rds')
 cols_meta <- read.csv('~/snakemake_project/DATA/cols_meta.csv',row.names = 1)
@@ -11,15 +12,16 @@ usethis::use_data(cols_meta)
 usethis::use_data(my_palettes, overwrite = TRUE)
 
 load(file='./data/ps.rda')
-ps_obj <- prepare_phyloseq(ps, transformation = 'compositional',detection = 10, prevalence= 0.05,
+ps_obj <- prepare_phyloseq(ps, transformation = 'compositional',detection = 0, prevalence= 0,
                            taxonomic_level = 'Species', first = 'filter')
 load(file='./data/cols_meta.rda')
 permanova_result <- plot_permanova(ps_obj = ps_obj,formula = 'YEAR + bmi_group + age_group',
                                    method = 'bray',cols_meta = cols_meta,palette = get_palette("set_10_2"))
 permanova_result[[2]]
 my_comparison <- c('2017','2022')
-alpha_results <- create_alpha_plots(ps_obj = ps_obj,col= 'YEAR',measure = 'Shannon',method = "wilcox.test",
+alpha_results <- octobiom::create_alpha_plots(ps_obj = ps_obj,col= 'YEAR',measure = c("Shannon",'Simpson'),method = "wilcox.test",
                    colors = get_palette("set_10_2"))
+alpha_results
 beta_results <- octobiom::create_ordination_plots(ps_obj,group = 'YEAR',palette = get_palette("set_2_1"))
 barplot_hierarchical_results <- barplot_hierarchical(ps_obj,taxrank = 'Species',feature = 'YEAR',top = 15,colors_barplot = get_palette("set_20_2"),
                                                      colors_line = get_palette('set_2_1'),dist = 'bray',size = c(1,1,5),
@@ -151,3 +153,5 @@ octobiom::retention_plot(phyloseq = ps_obj,detection_values = det, prevalence_va
                          prevalence_colors = get_palette('set_10_4'))
 ?octobiom::prevalence_abundance_plot
 octobiom::prevalence_abundance_plot(ps,top_n=10)
+?octobiom::group_prevalence
+
