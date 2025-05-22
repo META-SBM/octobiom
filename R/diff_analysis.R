@@ -266,9 +266,9 @@ create_comparison_barplot <- function(data,
   }
 
   # Extract comparison groups
-  groups <- unlist(strsplit(comparison_name, " vs "))
+  groups <- unlist(strsplit(comparison_name, "_"))
   if (length(groups) != 2) {
-    stop("comparison_name must be in format 'Group1 vs Group2'")
+    stop("comparison_name must be in format 'Group1_Group2'")
   }
 
   group_1 <- groups[1]
@@ -517,7 +517,9 @@ create_comparison_heatmap <- function(data_deseq,
         format.pval(padj, digits = pvalue_digits, eps = 0.001)
       ),
       cell_text = sprintf(
-        "%.2f %s (p = %s)",  # Replaced \t with spaces
+        "%.2f
+        %s
+        (p = %s)",  # Replaced \t with spaces
         coef,
         signif,
         formatted_padj
@@ -555,7 +557,7 @@ create_comparison_heatmap <- function(data_deseq,
 
   abund_data <- plot_data_full %>%
     dplyr::filter(!is.na(Taxon)) %>%
-    #dplyr::mutate(Abundance = log10(.data$Abundance + 0.00001)) %>%
+    dplyr::mutate(Abundance = log10(.data$Abundance + 0.00001)) %>%
     dplyr::select(Taxon, !!dplyr::sym(group_var_abund_prev), Abundance) %>%
     tidyr::pivot_wider(
       names_from = !!dplyr::sym(group_var_abund_prev),
@@ -583,7 +585,7 @@ create_comparison_heatmap <- function(data_deseq,
   # Create Heatmap with annotations ----
 
   ra <- ComplexHeatmap::rowAnnotation(
-    Mean_abundance = ComplexHeatmap::anno_barplot(
+    Mean_log10_abundance = ComplexHeatmap::anno_barplot(
       abund_data,
       which = "row",
       width = grid::unit(3, "cm"),
@@ -599,11 +601,13 @@ create_comparison_heatmap <- function(data_deseq,
       which = "row",
       width = grid::unit(3, "cm"),
       beside = TRUE, attach = TRUE,
-      gp = grid::gpar(fill = annotation_colors)
+      gp = grid::gpar(fill = annotation_colors),
+      labels_gp = gpar(fontsize = text_size)
     ),
     show_annotation_name = TRUE,
-    annotation_name_rot = 0,
-    annotation_name_side = "top",
+    annotation_name_rot = 45,
+    annotation_name_side = "bottom",
+    annotation_name_gp = grid::gpar(fontsize = text_size * 0.8),
     annotation_legend_param = list(
       title = group_var_abund_prev,
       labels = names(annotation_colors),

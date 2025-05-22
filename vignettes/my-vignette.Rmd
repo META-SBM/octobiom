@@ -274,18 +274,17 @@ combined_df
 
 comparison_names <- unique(combined_df$comparison)
 
-age_colors <- c(
-  '37and45'='#48cae4',#blue
-  '46and55' = '#a24f7c' ,
-  '56and65'='#ff6b35',#orange
-  '65more' = '#ef233c' #red
+bmi_colors <- c(
+  'Lean' = "#FF8400",
+  'Overweight' = "#3C096C",
+  'Obesity' = "#FF0A54"
 )
 plot_diff_list <- purrr::map(comparison_names, ~ {
   tryCatch({
-    octobiom::create_comparison_plots(data = combined_df, comparison_name = .x, group_var_abund_prev = "age_group",
+    octobiom::create_comparison_barplot(data = combined_df, comparison_name = .x, group_var_abund_prev = "bmi_group",
                                                 group_var_fold_change = "Phylum",
                                                 ps_obj = ps_obj,
-                                                group_colors_abund_prev =  age_colors,
+                                                group_colors_abund_prev =  bmi_colors,
                                                 group_colors_fold_change = phylum_colors)
   }, error = function(e) {
     message(paste("Error in method:", .x))
@@ -328,10 +327,7 @@ results <- process_maaslin(
   output_dir = '/home/kuzmichenko_pa/maaslin_test/'
 )
 results <- read.csv('/home/kuzmichenko_pa/maaslin_results/results.csv')
-results
-comparison <- 'Lean_Obesity'
-comparison_group <- "Obesity"
-reference_group <- "Lean"
+
 tax_table <- as(phyloseq::tax_table(ps_obj),'data.frame')
 tax_table <- tax_table %>%
   tibble::rownames_to_column('Taxon')
@@ -386,4 +382,18 @@ for (current_comparison in unique_comparison) {
 
 heatmap_results
 
+```
+#Сети 
+```{r,fig.height=8,fig.width=8}
+ps_obj <- octobiom::prepare_phyloseq(ps,transformation = 'NONE',detection = 10, prevalence = 0.15,taxonomic_level = 'Species',first = 'filter')
+write.table(t(ps_obj@otu_table),'~/DAVID_WGS/fastspar_output/otu_table_filtered.txt',sep = "\t",
+            row.names = TRUE)
+?octobiom::run_fastspar_analysis
+
+networks_results <- run_fastspar_analysis(conda_env = "fastspar",
+                                          input_dir = '~/DAVID_WGS/fastspar_output',
+                                          output_dir = '~/DAVID_WGS/fastspar_output/results',
+                                          otu_table = 'otu_table_filtered.txt',
+                                          threads = 10,ps_obj = ps_obj,cor_threshold = 0.5)
+networks_results$plot
 ```

@@ -74,7 +74,7 @@ create_alpha_plots <- function(ps_obj, col,
       ggplot2::geom_jitter(size = 1.5, alpha = 0.5, width = 0.1, aes_string(color = col)) +
       ggplot2::scale_color_manual(values = colors) +
       ggplot2::scale_fill_manual(values = colors) +
-      ggplot2::labs(title = paste(measure)) +
+      ggplot2::labs(title = paste(measure),y='') +
       ggplot2::theme_bw(base_size = size) +
       ggplot2::theme(
         axis.text.x = element_text(angle = 45, hjust = 1),
