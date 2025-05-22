@@ -173,6 +173,9 @@ tryCatch({
   # Create adjacency matrix
   adj_matrix <- NPS.corr
   adj_matrix[NPS.oneside.adjusted >= 0.05 | abs(NPS.corr) < cor_threshold] <- 0
+  if (all(adj_matrix == 0)) {
+    stop("The adjacency matrix is completely zero after applying the threshold conditions. Function terminated.")
+  }
   adj_matrix <- adj_matrix[rowSums(abs(adj_matrix)) > 0, colSums(abs(adj_matrix)) > 0]
 
    # Add CLR abundance data
@@ -217,12 +220,36 @@ tryCatch({
   natural_connectivity <- round(pulsar::natural.connectivity(adj_matrix),4)
   edge_density_value <- round(edge_density(g),2)
   edge_cor_values <- E(g)$edge_cor_value
+  mean_edge_cor <- round(mean(edge_cor_values),3)
   positive_edge_percentage <- round(sum(edge_cor_values > 0) / length(edge_cor_values) * 100,2)
   num_components <- igraph::components(g)$no
   clustering_coeff <- round(transitivity(g, type = "average"),2)
+  total_edges <- ecount(g)
+  total_nodes <- vcount(g)
+  edges_to_nodes_ratio <- round(total_edges / total_nodes,2)
   network_annotation <- paste("Modularity:", modularity_value,"\n", "Natural connectivity:", natural_connectivity,"\n",
                               "Number of components:", num_components,"\n", "Positive edge percentage:", positive_edge_percentage,"\n",
-                              "Edge density:", edge_density_value,"\n","Clustering coefficient:", clustering_coeff)
+                              "Edge density:", edge_density_value,"\n","Clustering coefficient:", clustering_coeff,"\n",
+                              "Average degree:", edges_to_nodes_ratio,"\n", "Mean correlation:", mean_edge_cor)
+  network_stats <- data.frame(
+    Metric = c("Modularity",
+               "Natural connectivity",
+               "Number of components",
+               "Positive edge percentage",
+               "Edge density",
+               "Clustering coefficient",
+               "Average degree (Edges/Nodes ratio)",
+               "Mean correlation"),
+    Value = c(modularity_value,
+              natural_connectivity,
+              num_components,
+              positive_edge_percentage,
+              edge_density_value,
+              clustering_coeff,
+              edges_to_nodes_ratio,
+              mean_edge_cor),
+    stringsAsFactors = FALSE
+  )
 
 
   # Visualization
@@ -267,7 +294,8 @@ tryCatch({
     adjacency_matrix = adj_matrix,
     correlation_matrix = NPS.corr,
     pvalues = NPS.oneside.adjusted,
-    plot = p
+    plot = p,
+    network_stats = network_stats
   ))
 
 }, error = function(e) {

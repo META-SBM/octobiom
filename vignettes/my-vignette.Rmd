@@ -395,5 +395,5 @@ networks_results <- run_fastspar_analysis(conda_env = "fastspar",
                                           output_dir = '~/DAVID_WGS/fastspar_output/results',
                                           otu_table = 'otu_table_filtered.txt',
                                           threads = 10,ps_obj = ps_obj,cor_threshold = 0.5)
-networks_results$plot
+networks_results$
 ```

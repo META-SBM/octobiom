@@ -2,6 +2,7 @@
 
 export(apply_maaslin2)
 export(barplot_hierarchical)
+export(bootstrap_otu_table)
 export(build_multi_correlation_network)
 export(calculate_abundance_stats)
 export(compare_prevalence_across_group)
