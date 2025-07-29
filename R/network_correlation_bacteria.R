@@ -178,24 +178,22 @@ tryCatch({
   }
   adj_matrix <- adj_matrix[rowSums(abs(adj_matrix)) > 0, colSums(abs(adj_matrix)) > 0]
 
-   # Add CLR abundance data
-  if (!is.null(ps_obj)) {
-    clr_data <- microbiome::transform(ps_obj, "clr")
-    clr_matrix <- as(t(otu_table(clr_data)), "matrix")
-    mean_abundance <- rowMeans(clr_matrix)
 
-    mean_abundance <- mean_abundance %>%
-      as.data.frame()
-    mean_abundance <- mean_abundance %>%
-      filter(rownames(mean_abundance) %in% rownames(adj_matrix))%>%
-      rename(abundance='.')
-  }
+  clr_data <- microbiome::transform(ps_obj, "clr")
+  clr_matrix <- as(t(otu_table(clr_data)), "matrix")
+  mean_abundance <- rowMeans(clr_matrix)
+  mean_abundance <- mean_abundance %>%
+    as.data.frame()
+  mean_abundance <- mean_abundance %>%
+    filter(rownames(mean_abundance) %in% rownames(adj_matrix))%>%
+    rename(abundance='.')
+
   # Add edge attributes
   results_df <- adj_matrix %>%
     as.data.frame() %>%
     tibble::rownames_to_column("from") %>%
     pivot_longer(cols = -from, names_to = "to", values_to = "cor") %>%
-    filter(cor != 0) %>%
+    #filter(cor != 0) %>%
     mutate(
       direction = ifelse(cor > 0, "positive", "negative"),
       cor_abs = abs(cor)

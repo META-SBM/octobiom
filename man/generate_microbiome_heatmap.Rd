@@ -9,7 +9,9 @@ generate_microbiome_heatmap(
   tax_level_annotation,
   features,
   tax_colors,
-  feature_colors
+  feature_colors,
+  row_name_size = 0,
+  col_name_size = 0
 )
 }
 \arguments{
@@ -22,6 +24,10 @@ generate_microbiome_heatmap(
 \item{tax_colors}{List of color palettes for taxonomic levels (named by level)}
 
 \item{feature_colors}{List of color palettes for sample features (named by feature)}
+
+\item{row_name_size}{Numeric parameter for the font size of line names}
+
+\item{col_name_size}{Numeric parameter for the font size of column names}
 }
 \value{
 Invisibly returns the ComplexHeatmap object

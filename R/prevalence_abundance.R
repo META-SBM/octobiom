@@ -139,7 +139,7 @@ prevalence_abundance_plot <- function(phyloseq, top_n = 15, zoom_plot = TRUE,
         bg.r = 0.1,
         max.overlaps = 20
       )
-    return(main_plot)
+    return(list(plot = main_plot,df_top = top_taxa))
   } else {
     # Create zoomed plot
     zoom_plot <- ggplot2::ggplot(top_taxa, ggplot2::aes(x = Abundance, y = Occupancy)) +
@@ -176,6 +176,6 @@ prevalence_abundance_plot <- function(phyloseq, top_n = 15, zoom_plot = TRUE,
 
     # Combine plots using patchwork
     combined_plot <- patchwork::wrap_plots(main_plot, zoom_plot, ncol = 1)
-    return(list(combined_plot,main_plot, zoom_plot))
+    return(list(plot = combined_plot,df_top = top_taxa))
   }
 }

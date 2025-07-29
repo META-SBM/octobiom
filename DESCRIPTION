@@ -48,7 +48,8 @@ Imports:
     base,
     magrittr,
     ggforce,
-    Maaslin2
+    Maaslin2,
+    argparse
 Depends: 
     R (>= 2.10)
 LazyData: true

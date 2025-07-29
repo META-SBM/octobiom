@@ -100,7 +100,7 @@ octobiom::generate_microbiome_heatmap(ps_obj,tax_level_annotation = 'Phylum',fea
 ```{r}
 #Let's estimate how many bacilli remain at different filtrations
 #Such graphs are frequently plotted based on compositional data; however, it is not impossible to apply an alternative transformation. The function performs a filtration of the prevalence and detection values, and subsequently draws the remaining number of taxa.
-ps_obj <- octobiom::prepare_phyloseq(ps, transformation = 'compositional',detection = 0, prevalence= 0,
+ps_obj <- octobiom::prepare_phyloseq(ps_Hadza, transformation = 'compositional',detection = 0, prevalence= 0,
                                      taxonomic_level = 'Species', first = 'filter')
 det <- c(0, 0.025,0.05,0.075,0.1)/100
 prevalences <- seq(.1, 0.9, .1)
@@ -162,14 +162,22 @@ plot_alpha_list_chao
 ggpubr::ggarrange(plot_alpha_list[[1]]$plots,plot_alpha_list_chao[[1]]$plots,widths = c(2,1))
 ```
 #Beta
-```{r,fig.height=5}
+```{r,fig.height=8,fig.width=12}
 ps_obj <- octobiom::prepare_phyloseq(ps,transformation = 'clr',detection = 10,prev = 0.1,taxonomic_level = 'Species',
                                      first = 'filter')
+
+ps_obj@sam_data$bmi_group <- factor(ps_obj@sam_data$bmi_group,levels = c('Lean','Overweight','Obesity'))
+ps_obj@sam_data$age_group <- factor(ps_obj@sam_data$age_group,levels = c('37-45','46-55','56-65','65+'))
+palette_list <- list(
+   'bmi_group' = bmi_colors,
+   'age_group' = age_colors
+ )
 ?octobiom::create_ordination_plots
 #Let's analyze beta diversity
 features <- c('bmi_group','age_group','sex',
               "smoking_status","YEAR" )
 color_palette <- octobiom::get_palette("set_10_4")
+additional_palette <- octobiom::get_palette("set_10_2")
 plot_beta_list <- purrr::map(features, ~ {
   tryCatch({
     octobiom::create_ordination_plots(ps_obj, group= .x, 
@@ -185,7 +193,18 @@ plot(plot_beta_list[[2]])
 plot(plot_beta_list[[3]])
 plot(plot_beta_list[[4]])
 plot(plot_beta_list[[5]])
-
+?octobiom::create_ordination_plots_double
+db <- octobiom::create_ordination_plots_double(ps_obj,
+                                     group = 'bmi_group',
+                                     palette = palette_list$bmi_group,distance_method = 'euclidean',
+                                     additional_group = 'age_group',
+                                     shape_palette = c(1,2,3,4),
+                                     additional_palette = palette_list$age_group)
+plot_grid(db)
+one_beta <- octobiom::create_ordination_plots_double(ps_obj,
+                                     group = 'bmi_group',
+                                     palette = palette_list$bmi_group,distance_method = 'euclidean'
+                                     )
 ```
 #stacked barplot hierarchical
 ```{r,fig.height=8}
@@ -303,6 +322,28 @@ ps_obj <- octobiom::prepare_phyloseq(ps,transformation = 'compositional',detecti
 octobiom::prevalence_abundance_plot(ps_obj,top_n=15,zoom_plot = F,line_color = octobiom::get_palette("set_2_1")[1],
                                     point_color = octobiom::get_palette("set_2_1")[2])
 ```
+#prevalence-prevalence plot
+```{r,fig.height=10,fig.width=10}
+ps_obj <- octobiom::prepare_phyloseq(ps,transformation = 'compositional',detection = 10, prevalence = 0.01,taxonomic_level = 'Species',first = 'filter')
+
+?octobiom::compare_prevalence_across_group 
+unique(ps_obj@sam_data$age_group)
+ps_obj@sam_data$bmi_group
+
+sample_data(ps_obj) <- as(sample_data(ps_obj),'data.frame') %>%
+  #as.data.frame() %>%
+  dplyr::mutate(age_group = recode(age_group,
+                             `65+` = "65_and_more",
+                             `56-65` = '56_65',
+                             `46-55` = '46_55',
+                             `37-45` = '37_45'))%>%
+  phyloseq::sample_data()
+zoom_list <- list(x = c(0.75, 1), y = c(0.75, 1))
+plot_list <- octobiom::compare_prevalence_across_group(ps_obj,column='age_group',zoom_window = zoom_list )
+plot_list
+plot_list <- octobiom::compare_prevalence_across_group(ps_obj,column='bmi_group',zoom_window = zoom_list )
+plot_list
+```
 #Maaslin + Heatmap
 ```{r,fig.height=6}
 ps_obj <- octobiom::prepare_phyloseq(ps,transformation = 'NONE',detection = 10, prevalence = 0.15,taxonomic_level = 'Species',first = 'filter')
@@ -312,9 +353,11 @@ ps_obj <- octobiom::prepare_phyloseq(ps,transformation = 'NONE',detection = 10, 
 
 ?process_maaslin
 methods <- list(
-  list(analysis_method = "CPLM", normalization = "TSS", transform = "NONE")#,
-  #list(analysis_method = "LM", normalization = "TMM", transform = "LOG"),
-  #list(analysis_method = "NEGBIN", normalization = "NONE", transform = "AST")
+  list(analysis_method = "CPLM", normalization = "TSS", transform = "NONE"),
+  list(analysis_method = "LM", normalization = "TSS", transform = "LOG"),
+  list(analysis_method = "LM", normalization = "CLR", transform = "NONE"),
+  list(analysis_method = "CPLM", normalization = "CSS", transform = "NONE"),
+  list(analysis_method = "CPLM", normalization = "TMM", transform = "NONE")
 )
 
 results <- process_maaslin(
@@ -385,15 +428,52 @@ heatmap_results
 ```
 #Сети 
 ```{r,fig.height=8,fig.width=8}
-ps_obj <- octobiom::prepare_phyloseq(ps,transformation = 'NONE',detection = 10, prevalence = 0.15,taxonomic_level = 'Species',first = 'filter')
-write.table(t(ps_obj@otu_table),'~/DAVID_WGS/fastspar_output/otu_table_filtered.txt',sep = "\t",
-            row.names = TRUE)
+?octobiom::prepare_phyloseq
+ps@sam_data$age_group
+ps_obj <- octobiom::prepare_phyloseq(ps,transformation = 'NONE',detection = 10, prevalence = 0.3,taxonomic_level = 'Species',first = 'filter')
+taxa_names(ps_obj) <- paste0(rownames(ps_obj@tax_table),'|', ps_obj@tax_table[,'Species'])
+otu_tab <- t(ps_obj@otu_table)
+df_to_write <- data.frame("#OTU ID" = rownames(otu_tab), otu_tab, check.names = FALSE)
+write.table(
+    df_to_write,
+    file ='~/DAVID_WGS/fastspar_output/otu_table_filtered.txt',
+    sep = "\t",
+    row.names = FALSE,     
+    quote = FALSE,
+    col.names = TRUE
+  ) 
+#write.table(t(ps_obj@otu_table),'~/DAVID_WGS/fastspar_output/otu_table_filtered.txt',sep = "\t",
+#            row.names = TRUE)
 ?octobiom::run_fastspar_analysis
+
 
 networks_results <- run_fastspar_analysis(conda_env = "fastspar",
                                           input_dir = '~/DAVID_WGS/fastspar_output',
-                                          output_dir = '~/DAVID_WGS/fastspar_output/results',
+                                          output_dir = '~/DAVID_WGS/fastspar_output/core_prev_0.3_Species',
                                           otu_table = 'otu_table_filtered.txt',
-                                          threads = 10,ps_obj = ps_obj,cor_threshold = 0.5)
-networks_results$
+                                          threads = 10,ps_obj = ps_obj,cor_threshold = 0.3)
+networks_results
+
+```
+#Bray_time_point
+```{r,fig.height=10,fig.width=10}
+ps_obj <- octobiom::prepare_phyloseq(ps,transformation = 'compositional',detection = 0, prevalence = 0,taxonomic_level = 'Species',first = 'transform')
+
+detection_levels <- c(0, 0.001, 0.01)
+prevalence_levels <- c(0.1, 0.5, 0.8)
+subject_id_col <- 'ID_KYH'
+time_col <- 'YEAR'
+color_palette <- octobiom::get_palette("set_2_1")
+color_palette
+
+?octobiom::analyze_beta_diversity_time_point
+beta_time <- analyze_beta_diversity_time_point(ps_obj,
+                                  detection_levels = detection_levels,
+                                  prevalence_levels = prevalence_levels,
+                                  dist_method = 'bray',
+                                  subject_id_col = subject_id_col,
+                                  time_col = time_col,
+                                  color_palette = color_palette
+                                  )
+beta_time
 ```

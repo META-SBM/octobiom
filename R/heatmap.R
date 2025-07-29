@@ -5,6 +5,8 @@
 #' @param features Vector of sample metadata features for column annotation. Default: NULL.
 #' @param tax_colors List of color palettes for taxonomic levels (named by level)
 #' @param feature_colors List of color palettes for sample features (named by feature)
+#' @param row_name_size Numeric parameter for the font size of line names
+#' @param col_name_size Numeric parameter for the font size of column names
 
 #' @return Invisibly returns the ComplexHeatmap object
 #' @export
@@ -38,7 +40,9 @@ generate_microbiome_heatmap <- function(ps_obj,
                                        tax_level_annotation,
                                        features,
                                        tax_colors,
-                                       feature_colors) {
+                                       feature_colors,
+                                       row_name_size = 0,
+                                       col_name_size = 0) {
 
   # Input validation
   if (!inherits(ps_obj, "phyloseq")) {
@@ -129,7 +133,7 @@ names(feature_palette) <- uniq_vals
       show_annotation_name = TRUE
     )
   }
-  # Create heatmap
+
   hm <- ComplexHeatmap::Heatmap(
     matrix = t(otu),
     col = circlize::colorRamp2(
@@ -140,8 +144,10 @@ names(feature_palette) <- uniq_vals
     clustering_method_rows = "ward.D2",
     clustering_distance_columns = "euclidean",
     clustering_method_columns = "ward.D2",
-    show_row_names = FALSE,
-    show_column_names = FALSE,
+    row_names_gp = grid::gpar(fontsize = row_name_size),
+    column_names_gp = grid::gpar(fontsize = col_name_size),
+    #show_row_names = FALSE,
+    #show_column_names = FALSE,
     left_annotation = row_annot,
     top_annotation = top_annot,
     heatmap_legend_param = list(

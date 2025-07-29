@@ -34,7 +34,6 @@
 #' }
 #'
 #' @export
-#' @importFrom microbiome transform
 #' @importFrom phyloseq distance
 #' @importFrom vegan adonis2
 #' @importFrom ggplot2 ggplot geom_col labs theme_classic coord_flip geom_label
@@ -59,13 +58,20 @@ plot_permanova <- function(ps_obj, formula,
 
   if(method == 'euclidean'){
     distance <- 'aitchison'
+    bd1 <- ps_obj %>%
+      microViz::dist_calc(distance,dist= distance) %>%
+      microViz::tax_transform(trans = "clr")%>%
+      microViz::ord_calc(method = "PCA") %>%
+      microViz::dist_bdisp(variables = cols_meta$new_name) %>%
+      microViz::bdisp_get()
   }else{
     distance <- method
+    bd1 <- ps_obj %>%
+      microViz::dist_calc(distance,dist= distance) %>%
+      microViz::dist_calc(distance,dist= distance) %>%
+      microViz::dist_bdisp(variables = cols_meta$new_name) %>%
+      microViz::bdisp_get()
   }
-  bd1 <- ps_obj %>%
-    microViz::dist_calc(distance) %>%
-    microViz::dist_bdisp(variables = cols_meta$new_name) %>%
-    microViz::bdisp_get()
 
   # Calculate distance matrix based on the specified method
   dist <- phyloseq::distance(ps_obj, method = method)

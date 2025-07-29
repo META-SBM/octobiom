@@ -154,4 +154,6 @@ octobiom::retention_plot(phyloseq = ps_obj,detection_values = det, prevalence_va
 ?octobiom::prevalence_abundance_plot
 octobiom::prevalence_abundance_plot(ps,top_n=10)
 ?octobiom::group_prevalence
-
+# Install released version from CRAN
+install.packages("pkgdown")
+usethis::use_pkgdown_github_pages()

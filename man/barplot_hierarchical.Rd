@@ -13,7 +13,9 @@ barplot_hierarchical(
   colors_annotation,
   dist,
   size,
-  decreasing
+  decreasing,
+  colnames = F,
+  colnames_angle = 45
 )
 }
 \arguments{
@@ -35,9 +37,13 @@ barplot_hierarchical(
 (dendrogram, annotation, barplot)}
 
 \item{decreasing}{Logical for ordering "other" category position}
+
+\item{colnames}{Logical for drawing colnames}
+
+\item{colnames_angle}{Angle for drawing colnames}
 }
 \value{
-A patchwork composite ggplot object
+A list of  patchwork composite ggplot object and data.frame info
 }
 \description{
 Creates a stacked barplot of taxonomic compositions

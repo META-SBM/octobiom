@@ -21,7 +21,10 @@ create_comparison_heatmap(
   pvalue_digits = 2,
   heatmap_height = 10,
   heatmap_width = 7,
-  number_model_true = 2
+  number_model_true = 2,
+  output_pathway = NULL,
+  width_figure = NULL,
+  height_figure = NULL
 )
 }
 \arguments{
@@ -59,6 +62,12 @@ model, padj, signif columns).}
 \item{heatmap_width}{Width of heatmap in cm (default: 7).}
 
 \item{number_model_true}{Threshold for minimum non-zero models required per taxon (default: 2).}
+
+\item{width_figure}{if output_pathway == T, png(width)}
+
+\item{height_figure}{if output_pathway == T, png(height)}
+
+\item{output_dir}{Dirrectory to save figure}
 }
 \value{
 A list containing:

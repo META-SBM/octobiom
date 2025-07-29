@@ -405,6 +405,9 @@ create_comparison_barplot <- function(data,
 #' @param heatmap_height Height of heatmap in cm (default: 10).
 #' @param heatmap_width Width of heatmap in cm (default: 7).
 #' @param number_model_true Threshold for minimum non-zero models required per taxon (default: 2).
+#' @param output_dir Dirrectory to save figure
+#' @param width_figure if output_pathway == T, png(width)
+#' @param height_figure if output_pathway == T, png(height)
 #'
 #' @return A list containing:
 #' \itemize{
@@ -455,7 +458,10 @@ create_comparison_heatmap <- function(data_deseq,
                                       pvalue_digits = 2,
                                       heatmap_height = 10,
                                       heatmap_width = 7,
-                                      number_model_true = 2
+                                      number_model_true = 2,
+                                      output_pathway= NULL,
+                                      width_figure = NULL,
+                                      height_figure = NULL
                                       ) {
   if (missing(data_deseq) || missing(data_maaslin) || missing(ref_group) ||
       missing(comp_group) || missing(taxa_level) || missing(ps_obj) ||
@@ -646,7 +652,7 @@ create_comparison_heatmap <- function(data_deseq,
     width = unit(heatmap_width, "cm"),
     height = unit(heatmap_height, "cm"),
   )
-  annotation_legend <- Legend(
+  annotation_legend <- ComplexHeatmap::Legend(
     title = group_var_abund_prev,
     at = names(annotation_colors),
     legend_gp = gpar(fill = annotation_colors),
@@ -658,6 +664,16 @@ create_comparison_heatmap <- function(data_deseq,
     ComplexHeatmap::draw(heatmap_obj,heatmap_legend_side = "top", annotation_legend_side = "top",
                          annotation_legend_list = list(annotation_legend), merge_legend = TRUE)
   })
+
+  if(!is.null(output_pathway)){
+
+    png(paste0(output_pathway,'/',comparison_name,'.png'), width = width_figure, height = height_figure, res = 300, bg = "white")
+      ComplexHeatmap::draw(heatmap_obj,heatmap_legend_side = "top", annotation_legend_side = "top",
+                         annotation_legend_list = list(annotation_legend), merge_legend = TRUE)
+
+  dev.off()
+  }
+
   heatmap_plot <- cowplot::plot_grid(heatmap_grob)
   return(list(
     heatmap_plot = heatmap_plot,

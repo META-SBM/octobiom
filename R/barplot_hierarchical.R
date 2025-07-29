@@ -30,8 +30,9 @@ tax_table_other <- function(colnames) {
 #' @param size Relative heights for plot components
 #' (dendrogram, annotation, barplot)
 #' @param decreasing Logical for ordering "other" category position
-#'
-#' @return A patchwork composite ggplot object
+#' @param colnames Logical for drawing colnames
+#' @param colnames_angle Angle for drawing colnames
+#' @return A list of  patchwork composite ggplot object and data.frame info
 #'
 #' @examples
 #' \dontrun{
@@ -57,7 +58,9 @@ tax_table_other <- function(colnames) {
 barplot_hierarchical <- function(ps, taxrank,
                                  feature, top, colors_barplot, colors_annotation,
                                  dist, size,
-                                 decreasing) {
+                                 decreasing,
+                                 colnames = F,
+                                 colnames_angle =45) {
   # Validate inputs
   if (!inherits(ps, "phyloseq")) stop("Input must be a phyloseq object")
   if (!taxrank %in% phyloseq::rank_names(ps)) stop("Specified taxonomic rank not found")
@@ -143,6 +146,12 @@ barplot_hierarchical <- function(ps, taxrank,
       legend.box = "vertical"
     ) +
     ggplot2::guides(fill = ggplot2::guide_legend(ncol = 1))
+  if(colnames == T){
+    p2 <- p2 +
+      ggplot2::theme(
+        axis.text.x = ggplot2::element_text(size = 10, angle = colnames_angle))
+
+  }
 
   p3 <- lapply(features, function(feat) {
     ggplot2::ggplot(df, ggplot2::aes(x = Sample, y = 1, fill = !!sym(feat))) +
@@ -162,5 +171,5 @@ barplot_hierarchical <- function(ps, taxrank,
 
   plot_list <- c(list(p1), p3,list(p2))
   combined_plot <- patchwork::wrap_plots(plot_list, ncol = 1, heights = size)
-  return(combined_plot)
+  return(list(combined_plot= combined_plot,df = df))
 }

@@ -2,22 +2,22 @@
 % Please edit documentation in R/group_prevalence.R
 \name{compare_prevalence_across_group}
 \alias{compare_prevalence_across_group}
-\title{Generate Prevalence Comparison Plots for Time Points}
+\title{Generate Prevalence Comparison Plots for All Pairwise Group Combinations}
 \usage{
 compare_prevalence_across_group(
   physeq,
   column,
-  top_n = 10,
   point_color = "#d5b3ff",
   smooth_color = "#d62828",
   text_size = 3,
-  highlight_top = FALSE
+  zoom_plot = T,
+  zoom_window = list(x = c(0.1, 0.5), y = c(0.1, 0.5))
 )
 }
 \arguments{
 \item{physeq}{A phyloseq object}
 
-\item{top_n}{Number of top taxa to label in zoom plots (default: 10)}
+\item{column}{Name of the column in sample_data containing groups to compare}
 
 \item{point_color}{Color for scatter plot points (default: "#d5b3ff")}
 
@@ -25,21 +25,13 @@ compare_prevalence_across_group(
 
 \item{text_size}{Size for text labels (default: 3)}
 
-\item{highlight_top}{Create highlight for top 10 taxa}
+\item{zoom_window}{lisr of x and y range (example : list(x = c(0.1, 0.5), y = c(0.1, 0.5)))}
 
-\item{output_dir}{directory where figures will be}
-
-\item{time_column}{Name of the column in sample_data containing time points}
-
-\item{width}{figure's width}
-
-\item{height}{figure's height}
-
-\item{dpi}{figure's quality}
+\item{top_n}{Number of top taxa to label in zoom plots (default: 10)}
 }
 \value{
-A list of ggplot objects for each time point comparison
+A list of ggplot objects for each pairwise group comparison
 }
 \description{
-Generate Prevalence Comparison Plots for Time Points
+Generate Prevalence Comparison Plots for All Pairwise Group Combinations
 }

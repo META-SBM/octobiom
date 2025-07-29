@@ -37,9 +37,9 @@ prepare_phyloseq <- function(phyloseq,
   if (!inherits(phyloseq, "phyloseq")) {
     stop("Input must be a phyloseq object.")
   }
-  if (!transformation %in% c("compositional", "clr", "NONE")) {
-    stop("Transformation must be 'compositional', 'clr' or NONE.")
-  }
+  #if (!transformation %in% c("compositional", "clr", "NONE")) {
+  #  stop("Transformation must be 'compositional', 'clr' or NONE.")
+  #}
   if ((detection < 0) & (transformation == "compositional")) {
     stop("Detection threshold cannot be negative in compositional data.")
   }
