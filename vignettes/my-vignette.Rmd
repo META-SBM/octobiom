@@ -200,7 +200,7 @@ db <- octobiom::create_ordination_plots_double(ps_obj,
                                      additional_group = 'age_group',
                                      shape_palette = c(1,2,3,4),
                                      additional_palette = palette_list$age_group)
-plot_grid(db)
+
 one_beta <- octobiom::create_ordination_plots_double(ps_obj,
                                      group = 'bmi_group',
                                      palette = palette_list$bmi_group,distance_method = 'euclidean'
