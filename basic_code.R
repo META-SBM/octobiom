@@ -156,4 +156,6 @@ octobiom::prevalence_abundance_plot(ps,top_n=10)
 ?octobiom::group_prevalence
 # Install released version from CRAN
 install.packages("pkgdown")
+usethis::use_github()
 usethis::use_pkgdown_github_pages()
+usethis::use_pkgdown()

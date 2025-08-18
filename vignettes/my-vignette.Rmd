@@ -100,7 +100,7 @@ octobiom::generate_microbiome_heatmap(ps_obj,tax_level_annotation = 'Phylum',fea
 ```{r}
 #Let's estimate how many bacilli remain at different filtrations
 #Such graphs are frequently plotted based on compositional data; however, it is not impossible to apply an alternative transformation. The function performs a filtration of the prevalence and detection values, and subsequently draws the remaining number of taxa.
-ps_obj <- octobiom::prepare_phyloseq(ps_Hadza, transformation = 'compositional',detection = 0, prevalence= 0,
+ps_obj <- octobiom::prepare_phyloseq(ps, transformation = 'compositional',detection = 0, prevalence= 0,
                                      taxonomic_level = 'Species', first = 'filter')
 det <- c(0, 0.025,0.05,0.075,0.1)/100
 prevalences <- seq(.1, 0.9, .1)
@@ -339,7 +339,7 @@ sample_data(ps_obj) <- as(sample_data(ps_obj),'data.frame') %>%
                              `37-45` = '37_45'))%>%
   phyloseq::sample_data()
 zoom_list <- list(x = c(0.75, 1), y = c(0.75, 1))
-plot_list <- octobiom::compare_prevalence_across_group(ps_obj,column='age_group',zoom_window = zoom_list )
+plot_list <- octobiom::compare_prevalence_across_group(physeq = ps_obj,column='age_group',zoom_window = zoom_list )
 plot_list
 plot_list <- octobiom::compare_prevalence_across_group(ps_obj,column='bmi_group',zoom_window = zoom_list )
 plot_list

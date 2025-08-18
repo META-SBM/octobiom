@@ -6,14 +6,15 @@
 #' @param point_color Color for scatter plot points (default: "#d5b3ff")
 #' @param smooth_color Color for LOESS smooth line (default: "#d62828")
 #' @param text_size Size for text labels (default: 3)
-#' @param zoom_window lisr of x and y range (example : list(x = c(0.1, 0.5), y = c(0.1, 0.5)))
+#' @param zoom_window list of x and y range (example : list(x = c(0.1, 0.5), y = c(0.1, 0.5)))
+#' @param zoom_plot_flag add zoom for top taxa
 #' @return A list of ggplot objects for each pairwise group comparison
 #' @export
 compare_prevalence_across_group <- function(physeq, column,
                                             point_color = "#d5b3ff",
                                             smooth_color = "#d62828",
                                             text_size = 3,
-                                            zoom_plot = T,
+                                            zoom_plot_flag = T,
                                             zoom_window = list(x = c(0.1, 0.5), y = c(0.1, 0.5))) {
   # Input validation
   if (!inherits(physeq, "phyloseq")) {
@@ -123,7 +124,7 @@ compare_prevalence_across_group <- function(physeq, column,
         plot.title = element_text(face = "bold", hjust = 0.5),
         panel.border = element_rect(color = "black", fill = NA, linewidth = 0.5)
       )
-    if(zoom_plot != F) {
+    if(zoom_plot_flag != F) {
     # Zoom plot for top taxa
     zoom_plot <- ggplot2::ggplot(top_taxa, aes_string(x = paste0("Prevalence_", group1),
                                              y = paste0("Prevalence_", group2))) +

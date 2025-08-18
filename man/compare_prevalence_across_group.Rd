@@ -10,7 +10,7 @@ compare_prevalence_across_group(
   point_color = "#d5b3ff",
   smooth_color = "#d62828",
   text_size = 3,
-  zoom_plot = T,
+  zoom_plot_flag = T,
   zoom_window = list(x = c(0.1, 0.5), y = c(0.1, 0.5))
 )
 }
@@ -25,7 +25,9 @@ compare_prevalence_across_group(
 
 \item{text_size}{Size for text labels (default: 3)}
 
-\item{zoom_window}{lisr of x and y range (example : list(x = c(0.1, 0.5), y = c(0.1, 0.5)))}
+\item{zoom_plot_flag}{add zoom for top taxa}
+
+\item{zoom_window}{list of x and y range (example : list(x = c(0.1, 0.5), y = c(0.1, 0.5)))}
 
 \item{top_n}{Number of top taxa to label in zoom plots (default: 10)}
 }
