@@ -42,10 +42,10 @@ compare_prevalence_across_group <- function(physeq, column,
 
     # Calculate prevalence
     otu_mat <- as(otu_table(ps_sub), "matrix")
-    if (!taxa_are_rows(ps_sub)) {
+    if (!phyloseq::taxa_are_rows(ps_sub)) {
       otu_mat <- t(otu_mat)
     }
-    prev <- rowSums(otu_mat > 0) / nsamples(ps_sub)
+    prev <- rowSums(otu_mat > 0) / phyloseq::nsamples(ps_sub)
 
     # Save results
     prevalence_list[[group]] <- data.frame(
@@ -57,7 +57,7 @@ compare_prevalence_across_group <- function(physeq, column,
     # Print diagnostic information
     message("Group: ", group)
     message("  Samples: ", length(samples_group))
-    message("  Taxa: ", ntaxa(ps_sub))
+    message("  Taxa: ", phyloseq::ntaxa(ps_sub))
   }
 
   # Create all possible pairwise combinations

@@ -12,6 +12,9 @@ name: pkgdown.yaml
 
 permissions: read-all
 
+template:
+  light-switch: true
+
 jobs:
   pkgdown:
     runs-on: ubuntu-latest
@@ -47,3 +50,20 @@ jobs:
           clean: false
           branch: gh-pages
           folder: docs
+
+articles:
+  - title: "Basic Analysis"
+    contents:
+      - my-vignette
+  - title: "Core analysis"
+    contents:
+      - core-analysis
+
+navbar:
+  left:
+    - text: "Articles"
+      menu:
+        - text: "Basic Analysis"
+          href: articles/my-vignette.html
+        - text: "Core analysis"
+          href: articles/core-analysis.html

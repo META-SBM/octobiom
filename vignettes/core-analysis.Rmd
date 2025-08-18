@@ -1,0 +1,79 @@
+---
+title: "Core analysis"
+output: html_document
+---
+This manual demonstrates key core microbiome analysis workflows using the `octobiom` package. 
+```{r}
+library(octobiom)
+library(dplyr)
+```
+#Load data
+Data for practice is collected in data folder. Let's load them.
+```{r}
+data(ps)
+force(ps)
+```
+#Retention Analysis
+```{r}
+# Estimate how many taxa remain at different filtration levels.
+# Retention plots are commonly generated from compositional data, but other transformations can also be applied.
+# The function filters by prevalence and detection thresholds, then plots the number of taxa remaining.
+
+ps_obj <- octobiom::prepare_phyloseq(ps, transformation = 'compositional',detection = 0, prevalence= 0,
+                                     taxonomic_level = 'Species', first = 'filter')
+
+det <- c(0, 0.025,0.05,0.075,0.1)/100
+prevalences <- seq(.1, 0.9, .1)
+
+octobiom::retention_plot(phyloseq = ps_obj,detection_values = det, prevalence_values = prevalences,
+                         prevalence_colors = get_palette('set_10_4'))
+
+```
+
+#Prevalence-Abundance plot
+```{r,fig.height=8}
+# Visualizes the relationship between taxon prevalence (frequency of presence) and mean abundance.
+# We calculate average compositional abundance for each taxon across samples and apply a logarithmic transformation.
+ps_obj <- octobiom::prepare_phyloseq(ps,transformation = 'compositional',detection = 10,prev = 0.05,taxonomic_level = 'Species',first = 'filter')
+?octobiom::prevalence_abundance_plot
+octobiom::prevalence_abundance_plot(ps_obj,top_n=15,zoom_plot = F,line_color = octobiom::get_palette("set_2_1")[1],
+                                    point_color = octobiom::get_palette("set_2_1")[2])
+```
+#Prevalence-Prevalence plot
+```{r,fig.height=10,fig.width=10}
+# Assess bacterial prevalence between study groups.
+
+ps_obj <- octobiom::prepare_phyloseq(ps,transformation = 'compositional',detection = 10, prevalence = 0.01,taxonomic_level = 'Species',first = 'filter')
+
+?octobiom::compare_prevalence_across_group 
+
+zoom_list <- list(x = c(0.75, 1), y = c(0.75, 1))
+
+plot_list <- octobiom::compare_prevalence_across_group(ps_obj,column='bmi_group',zoom_window = zoom_list )
+plot_list
+```
+
+#Bray_time_point
+```{r,fig.height=10,fig.width=10}
+#Since we have two time points, it is possible to calculate how much a person is similar to himself than to others. The algorithm calculates beta between two time points of the same person and all possible combinations of different people at time points.
+ps_obj <- octobiom::prepare_phyloseq(ps,transformation = 'compositional',detection = 0, prevalence = 0,taxonomic_level = 'Species',first = 'transform')
+
+detection_levels <- c(0, 0.001, 0.01)
+prevalence_levels <- c(0.1, 0.5, 0.8)
+subject_id_col <- 'ID_KYH'
+time_col <- 'YEAR'
+color_palette <- octobiom::get_palette("set_2_1")
+color_palette
+
+?octobiom::analyze_beta_diversity_time_point
+beta_time <- analyze_beta_diversity_time_point(ps_obj,
+                                  detection_levels = detection_levels,
+                                  prevalence_levels = prevalence_levels,
+                                  dist_method = 'bray',
+                                  subject_id_col = subject_id_col,
+                                  time_col = time_col,
+                                  color_palette = color_palette
+                                  )
+beta_time
+```
+

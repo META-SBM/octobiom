@@ -1,0 +1,47 @@
+---
+title: "Network Analysis (In Development)"
+vignette: >
+  %\VignetteIndexEntry{Differential Analysis (In Development)}
+  %\VignetteEngine{knitr::rmarkdown}
+  \VignetteKeyword{internal}
+---
+
+```{r}
+library(octobiom)
+library(dplyr)
+```
+#Load data
+Data for practice is collected in data folder. Let's load them.
+```{r}
+data(ps)
+force(ps)
+```
+#Сети 
+```{r,fig.height=8,fig.width=8}
+?octobiom::prepare_phyloseq
+ps@sam_data$age_group
+ps_obj <- octobiom::prepare_phyloseq(ps,transformation = 'NONE',detection = 10, prevalence = 0.3,taxonomic_level = 'Species',first = 'filter')
+taxa_names(ps_obj) <- paste0(rownames(ps_obj@tax_table),'|', ps_obj@tax_table[,'Species'])
+otu_tab <- t(ps_obj@otu_table)
+df_to_write <- data.frame("#OTU ID" = rownames(otu_tab), otu_tab, check.names = FALSE)
+write.table(
+    df_to_write,
+    file ='~/DAVID_WGS/fastspar_output/otu_table_filtered.txt',
+    sep = "\t",
+    row.names = FALSE,     
+    quote = FALSE,
+    col.names = TRUE
+  ) 
+#write.table(t(ps_obj@otu_table),'~/DAVID_WGS/fastspar_output/otu_table_filtered.txt',sep = "\t",
+#            row.names = TRUE)
+?octobiom::run_fastspar_analysis
+
+
+networks_results <- run_fastspar_analysis(conda_env = "fastspar",
+                                          input_dir = '~/DAVID_WGS/fastspar_output',
+                                          output_dir = '~/DAVID_WGS/fastspar_output/core_prev_0.3_Species',
+                                          otu_table = 'otu_table_filtered.txt',
+                                          threads = 10,ps_obj = ps_obj,cor_threshold = 0.3)
+networks_results
+
+```

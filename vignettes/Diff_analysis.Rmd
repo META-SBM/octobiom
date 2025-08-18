@@ -1,0 +1,170 @@
+---
+title: "Differential Analysis (In Development)"
+vignette: >
+  %\VignetteIndexEntry{Differential Analysis (In Development)}
+  %\VignetteEngine{knitr::rmarkdown}
+  \VignetteKeyword{internal}
+---
+
+```{r}
+library(octobiom)
+library(dplyr)
+```
+#Load data
+Data for practice is collected in data folder. Let's load them.
+```{r}
+data(ps)
+force(ps)
+```
+#Differential analysis DESEQ2
+```{r,fig.height=5}
+library(DESeq2)
+library(phyloseq)
+#Let's apply differential abundance analysis using the DESEq2 tool
+#Prepare dataset. We need count data.
+ps_obj <- octobiom::prepare_phyloseq(ps,transformation = 'NONE',detection = 10, prevalence = 0.15,taxonomic_level = 'Species',first = 'filter')
+ps_obj@sam_data$bmi_group <- factor(ps_obj@sam_data$bmi_group,levels = c('Lean','Overweight','Obesity'))
+ps_obj@sam_data$age_group <- ifelse(ps_obj@sam_data$age_at_baseline <= 36, 'less_36',
+                                    ifelse(ps_obj@sam_data$age_at_baseline <= 45, '37and45',
+                                           ifelse(ps_obj@sam_data$age_at_baseline <= 55, '46and55',
+                                                  ifelse(ps_obj@sam_data$age_at_baseline <= 65, '56and65',
+                                                         '65more'))))
+diagdds <- phyloseq::phyloseq_to_deseq2(ps_obj ,~ bmi_group)
+diagdds <- DESeq(diagdds, test="Wald", fitType="parametric", sfType = "poscounts")
+
+#contrasts <- list(
+#  c('age_group', '46and55', '37and45'),
+#  c('age_group', '56and65', '37and45'),
+#  c('age_group', '65more', '37and45')
+#)
+contrasts <- list(
+  c('bmi_group', 'Lean', 'Overweight'),
+  c('bmi_group', 'Lean', 'Obesity'),
+  c('bmi_group', 'Overweight', 'Obesity')
+)
+resultsNames(diagdds)
+?octobiom::create_sigtab
+sigtabs_list <- list()
+sigtabs_list <- lapply(contrasts, function(contrast) {
+  tryCatch(
+    octobiom::create_sigtab(ps_obj, diagdds, contrast),
+    error = function(e) {
+      message(paste("Error processing contrast:", paste(contrast, collapse = " vs "), " - ", e$message))
+      return(NULL)
+    }
+  )
+})
+
+identical(sort(taxa_names(ps_obj)), sort(rownames(diagdds)))
+combined_df <- do.call(rbind, sigtabs_list)
+?octobiom::create_comparison_plots
+combined_df
+?octobiom::calculate_abundance_stats
+
+
+
+comparison_names <- unique(combined_df$comparison)
+
+bmi_colors <- c(
+  'Lean' = "#FF8400",
+  'Overweight' = "#3C096C",
+  'Obesity' = "#FF0A54"
+)
+plot_diff_list <- purrr::map(comparison_names, ~ {
+  tryCatch({
+    octobiom::create_comparison_barplot(data = combined_df, comparison_name = .x, group_var_abund_prev = "bmi_group",
+                                                group_var_fold_change = "Phylum",
+                                                ps_obj = ps_obj,
+                                                group_colors_abund_prev =  bmi_colors,
+                                                group_colors_fold_change = phylum_colors)
+  }, error = function(e) {
+    message(paste("Error in method:", .x))
+    message(e$message)  # Print the error message
+    return(NULL)  # Return NULL for this iteration
+  })
+})
+plot_diff_list
+
+```
+#Maaslin + Heatmap
+```{r,fig.height=6}
+ps_obj <- octobiom::prepare_phyloseq(ps,transformation = 'NONE',detection = 10, prevalence = 0.15,taxonomic_level = 'Species',first = 'filter')
+
+?octobiom::process_maaslin
+# Define methods
+
+?process_maaslin
+methods <- list(
+  list(analysis_method = "CPLM", normalization = "TSS", transform = "NONE"),
+  list(analysis_method = "LM", normalization = "TSS", transform = "LOG"),
+  list(analysis_method = "LM", normalization = "CLR", transform = "NONE"),
+  list(analysis_method = "CPLM", normalization = "CSS", transform = "NONE"),
+  list(analysis_method = "CPLM", normalization = "TMM", transform = "NONE")
+)
+
+results <- process_maaslin(
+  ps_obj = ps,
+  comparison_group = "bmi_group",
+  methods = methods,
+  fixed_effects = c("bmi_group"),
+  reference = c("bmi_group", "Lean"),
+  ncores = 1,
+  output_dir = '/home/kuzmichenko_pa/maaslin_test/'
+)
+results <- read.csv('/home/kuzmichenko_pa/maaslin_results/results.csv')
+
+tax_table <- as(phyloseq::tax_table(ps_obj),'data.frame')
+tax_table <- tax_table %>%
+  tibble::rownames_to_column('Taxon')
+
+unique_comparison <- unique(results$comparison)
+heatmap_results <- list()
+
+bmi_colors <- c(
+  'Lean' = "#FF8400",
+  'Overweight' = "#3C096C",
+  'Obesity' = "#FF0A54"
+)
+?create_comparison_heatmap
+
+for (current_comparison in unique_comparison) {
+  results_filtered <- results %>%
+    dplyr::filter(comparison == current_comparison)
+  results_filtered$comparison_group <- strsplit(current_comparison,split='_')[[1]][1]
+  results_filtered <- results_filtered %>%
+    dplyr::rename(reference_group = 'value',padj = 'qval',Taxon = 'feature') %>%
+    dplyr::left_join(tax_table , by = 'Taxon') %>%
+    dplyr::select(Taxon,coef,padj,model,reference_group,comparison_group,Species,comparison)
+  results_filtered$signif <- ifelse(
+    results_filtered$padj <= 0.001, "***",
+    ifelse(
+      results_filtered$padj <= 0.01, "**",
+      ifelse(results_filtered$padj <= 0.05, "*", "")
+    )
+  )
+  results_filtered <- results_filtered %>%
+    dplyr::filter(padj < 0.05)
+  combined_df_filtered <- combined_df %>%
+    dplyr::filter(comparison == current_comparison) %>%
+    dplyr::rename(reference_group = 'group1',comparison_group = 'group2') %>%
+    dplyr::select(Taxon,coef,model,comparison,signif,padj,Species,comparison_group,reference_group)
+  heatmap_results[[current_comparison]]<- octobiom::create_comparison_heatmap(data_deseq = combined_df_filtered,
+                                    data_maaslin = results_filtered,
+                                    ref_group = strsplit(current_comparison,split='_')[[1]][1],
+                                    comp_group = strsplit(current_comparison,split='_')[[1]][2],
+                                    taxa_level = 'Species',
+                                    ps_obj,
+                                    group_var_abund_prev = "bmi_group",
+                                    group_colors_abund_prev = bmi_colors,
+                                    comparison_name = current_comparison,
+                                    heatmap_height =14,
+                                    heatmap_width = 5,
+                                    number_model_true = 0
+                                    )
+  
+}
+
+
+heatmap_results
+
+```
