@@ -18,6 +18,7 @@
 #'                (default: 10, set to NULL to show all significant taxa)
 #' @param len_axis Scaling factor for taxa vectors (default: 1)
 #' @param ratio Parameter indicating the ratio of figures
+#' @param font_family Font family to use (default: "Times New Roman")
 #'
 #' @return A grid.arrange object containing the ordination plot with marginal distributions
 #'
@@ -67,13 +68,15 @@
 create_ordination_plots <- function(ps_obj, method = "PCoA", distance_method = "bray",
                                     group, size = 10, palette, taxa_plot = TRUE,
                                     taxrank = "Genus", top_taxa = 10,
-                                    len_axis = 1, ratio = c(1, 4)) {
+                                    len_axis = 1, ratio = c(1, 4),
+                                    font_family = "Times New Roman") {
 
   # Validate input
   if (!inherits(ps_obj, "phyloseq")) stop("Input must be a phyloseq object")
   if (!group %in% colnames(sample_data(ps_obj))) {
     stop("Grouping variable not found in sample data")
   }
+
 
   # Automatically determine group levels (sorted)
   group_levels <- sort(unique(as.character(phyloseq::sample_data(ps_obj)[[group]])))
@@ -146,9 +149,12 @@ create_ordination_plots <- function(ps_obj, method = "PCoA", distance_method = "
     ylab(paste0('Axis.2 [', round(variance_explained[2], 1), '%]')) +
     theme_bw(base_size = size) +
     theme(
-      axis.text.x = element_text(angle = 90, hjust = 1),
+      axis.text.x = element_text(angle = 45, hjust = 1, family = font_family, size = size),
+      axis.text.y = element_text(family = font_family, size = size),
+      axis.title = element_text(family = font_family, size = size, face = "bold"),
       legend.position = "none",
-      panel.grid = element_line(size = 0.1, color = "gray")
+      panel.grid = element_line(size = 0.1, color = "gray"),
+      text = element_text(family = font_family, size = size)
     )
 
   # Add taxa vectors if enabled
@@ -163,6 +169,12 @@ create_ordination_plots <- function(ps_obj, method = "PCoA", distance_method = "
         data = top_significant_vectors,
         aes(x = Axis.1 * len_axis, y = Axis.2 * len_axis, label = taxa),
         color = "black", size = 3, box.padding = 0.5
+      )+
+      theme(
+        axis.text.x = element_text(angle = 45, hjust = 1, family = font_family, size = size),
+        axis.text.y = element_text(family = font_family, size = size),
+        axis.title = element_text(family = font_family, size = size, face = "bold"),
+        text = element_text(family = font_family, size = size)
       )
   }
 
@@ -198,7 +210,10 @@ create_ordination_plots <- function(ps_obj, method = "PCoA", distance_method = "
     ) +
     coord_flip() +
     theme_bw(base_size = size) +
-    theme(legend.position = "none")
+    theme(legend.position = "none",
+          axis.text.x = element_text(angle = 45, hjust = 1, family = font_family, size = size),
+          axis.text.y = element_text(family = font_family, size = size),
+          axis.title = element_text(family = font_family, size = size, face = "bold"))
 
   # Axis.2 statistics and plot
   stats_axis2 <- ggpubr::compare_means(
@@ -228,14 +243,20 @@ create_ordination_plots <- function(ps_obj, method = "PCoA", distance_method = "
       tip.length = 0.02, step.increase = 0.05
     ) +
     theme_bw(base_size = size) +
-    theme(legend.position = "none")
+    theme(legend.position = "none",
+          axis.text.x = element_text(angle = 45, hjust = 1, family = font_family, size = size),
+          axis.text.y = element_text(family = font_family, size = size),
+          axis.title = element_text(family = font_family, size = size, face = "bold"))
 
   # Legend plot
   legend_plot <- ggplot(P, aes_string(x = "Axis.1", y = "Axis.2", color = group)) +
     geom_point(size = 2.5) +
     scale_color_manual(values = palette) +
     theme_bw() +
-    theme(legend.position = "right")
+    theme(legend.position = "right",
+          axis.text.x = element_text(angle = 45, hjust = 1, family = font_family, size = size),
+          axis.text.y = element_text(family = font_family, size = size),
+          axis.title = element_text(family = font_family, size = size, face = "bold"))
   legend <- cowplot::get_legend(legend_plot)
 
   # Arrange plots

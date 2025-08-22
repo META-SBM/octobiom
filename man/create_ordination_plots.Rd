@@ -15,7 +15,8 @@ create_ordination_plots(
   taxrank = "Genus",
   top_taxa = 10,
   len_axis = 1,
-  ratio = c(1, 4)
+  ratio = c(1, 4),
+  font_family = "Times New Roman"
 )
 }
 \arguments{
@@ -42,6 +43,8 @@ create_ordination_plots(
 \item{len_axis}{Scaling factor for taxa vectors (default: 1)}
 
 \item{ratio}{Parameter indicating the ratio of figures}
+
+\item{font_family}{Font family to use (default: "Times New Roman")}
 }
 \value{
 A grid.arrange object containing the ordination plot with marginal distributions

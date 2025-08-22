@@ -34,6 +34,8 @@ create_alpha_plots(
 
 \item{bracket_nudge_y}{Vertical adjustment to nudge brackets (default 0)}
 
+\item{font_family}{Font family to use (default: "Times New Roman")}
+
 \item{measure}{Alpha diversity measure to plot (default: 'Shannon')}
 }
 \value{
