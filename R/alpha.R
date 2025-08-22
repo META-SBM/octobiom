@@ -7,6 +7,7 @@ plot_alpha_div <- function(ps_obj, group, color, measure
 ) {
   # Generate boxplot of alpha diversity without transformation
   p <- phyloseq::plot_richness(ps_obj, x = group, color = color, measures = measure)
+  p$layers <- p$layers[-1]
   return(p)
 }
 #' @title Create Alpha Diversity Plots with Statistical Comparisons
@@ -22,6 +23,8 @@ plot_alpha_div <- function(ps_obj, group, color, measure
 #' @param colors Vector of colors for groups
 #' @param size Base font size for plot elements (default: 10)
 #' @param ncol Number of columns in the combined plot (default: length(measures)).
+#' @param text_size size of text in figure
+#' @param bracket_nudge_y Vertical adjustment to nudge brackets (default 0)
 #'
 #' @return A list containing:
 #' \itemize{
@@ -37,7 +40,8 @@ plot_alpha_div <- function(ps_obj, group, color, measure
 #'   ps_obj = my_phyloseq,
 #'   col = "Treatment",
 #'   measures = c("Shannon", "Simpson"),
-#'   colors = colors
+#'   colors = colors,
+#'   bracket_nudge_y = 0.1
 #' )
 #' print(p)
 #' }
@@ -51,7 +55,12 @@ plot_alpha_div <- function(ps_obj, group, color, measure
 create_alpha_plots <- function(ps_obj, col,
                                measures = c("Shannon"),
                                method = "wilcox.test",
-                               colors, size = 10,ncol = NULL) {
+                               colors, size = 10,ncol = NULL, text_size = 5,bracket_nudge_y = 0,
+                               font_family = "Times New Roman") {
+  if (!font_family %in% extrafont::fonts()) {
+    warning(paste("Font", font_family, "not found. Using default sans font."))
+    font_family <- "sans"  # Fallback to default
+  }
 
   plot_list <- list()
   stat_list <- list()
@@ -69,18 +78,23 @@ create_alpha_plots <- function(ps_obj, col,
   for (measure in measures) {
     # Create base plot
     p <- plot_alpha_div(ps_obj, group = col, color = col, measure = measure) +
+      ggplot2::geom_blank() +
       ggplot2::geom_violin(trim = FALSE, alpha = 0.1, aes_string(fill = col)) +
       ggplot2::geom_boxplot(width = 0.2, alpha = 0.75, outlier.shape = NA) +
-      ggplot2::geom_jitter(size = 1.5, alpha = 0.5, width = 0.1, aes_string(color = col)) +
+      ggplot2::geom_jitter(size = 0.5, alpha = 0.5, width = 0.1, aes_string(color = col)) +
       ggplot2::scale_color_manual(values = colors) +
       ggplot2::scale_fill_manual(values = colors) +
       ggplot2::labs(title = paste(measure),y='') +
-      ggplot2::theme_bw(base_size = size) +
+      ggplot2::theme_minimal() +
       ggplot2::theme(
-        axis.text.x = element_text(angle = 45, hjust = 1),
-        legend.position = "none",
-        plot.title = element_text(face = "bold", hjust = 0.5),
-        strip.text = element_blank()
+        axis.text.x = element_text(angle = 45, hjust = 1, family = font_family, size = size),
+        axis.text.y = element_text(family = font_family, size = size),
+        axis.title = element_text(family = font_family, size = size, face = "bold"),
+        legend.text = element_text(family = font_family, size = size),
+        legend.title = element_text(family = font_family, size = size, face = "bold"),
+        plot.title = element_text(face = "bold", hjust = 0.5, family = font_family),
+        strip.text = element_blank(),
+        text = element_text(family = font_family, size = size)
       )+
       ggplot2::scale_x_discrete(labels = function(x) paste0(x, "\n(n=", sample_sizes[x], ")"))
     # Prepare data
@@ -114,8 +128,10 @@ create_alpha_plots <- function(ps_obj, col,
 
 
     stat_res$label <- paste0(
-      stat_res$p.adj.signif, "\n",
-      "(p=", stat_res$p.adj.formatted, ")"
+      stat_res$p.adj.signif
+    )
+    stat_res$label1 <-paste0(
+     '(p=', stat_res$p.adj.formatted, ')'
     )
 
     # Добавляем на график
@@ -124,11 +140,25 @@ create_alpha_plots <- function(ps_obj, col,
         stat_res,
         label = "label",
         tip.length = 0.01,
-        step.increase = 0.1,
-        size = 3,
-        bracket.size = 0.5,
-        vjust = 0.7
-      )
+        step.increase = 0.15,
+        size = text_size,
+        bracket.size = 0.1,
+        vjust = 0.5,
+        parse = TRUE,
+        bracket.nudge.y = bracket_nudge_y
+      )+
+      ggpubr::stat_pvalue_manual(
+        stat_res,
+        label = "label1",
+        tip.length = 0.01,
+        step.increase = 0.15,
+        size = text_size,
+        bracket.size = 0.1,
+        vjust = 2.3,
+        parse = TRUE,
+        bracket.nudge.y = bracket_nudge_y
+      )+
+      theme(text = element_text(family = font_family, lineheight = 0.5))
 
     # Save results
     plot_list[[measure]] <- p
@@ -137,7 +167,8 @@ create_alpha_plots <- function(ps_obj, col,
 
 
   if (is.null(ncol)) ncol <- length(measures)
-  combined_plot <- patchwork::wrap_plots(plot_list, ncol = ncol)
+  combined_plot <- patchwork::wrap_plots(plot_list, ncol = ncol) &
+    theme(text = element_text(family = font_family))
 
   # Возвращаем результаты
   return(list(

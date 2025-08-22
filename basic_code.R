@@ -160,3 +160,29 @@ usethis::use_github()
 usethis::use_pkgdown_github_pages()
 usethis::use_pkgdown()
 pkgdown::build_site()
+#install.packages("hexSticker")
+library(hexSticker)
+knitr::include_graphics('figures/octobiom.png',dpi=300)
+imgurl <- "./figures/octobiom.png"   # Use your local image path here
+sysfonts::font_add_google("Montserrat", "montserrat")
+?hexSticker::sticker
+sticker(imgurl, package="octobiom", p_size=20, s_x=1, s_y=.75, s_width=.6,h_fill = 'white',p_color = 'black',
+        filename="./figures/imgfile.png",h_color="#f39c12")
+sticker(
+  imgurl,
+  package = "octobiom",       # Package name (appears on sticker)
+  p_size = 20,                # Text size for package name
+  s_x = 1,                    # Logo X position (centered)
+  s_y = 0.8,                 # Logo Y position (slightly higher for balance)
+  s_width = 0.6,              # Logo width (fill hexagon effectively)
+  h_fill = "#F2EEE9",         # Hex fill color (white or leave default)
+  h_color = "#A6171C",        # Border color (choose a contrast, e.g., blue or black)
+  p_color = "#A6171C",        # Text color (black)
+  #p_family = "sans",          # Font family (sans for modern look)
+  url = "github.com/META-SBM/octobiom", # Add a URL if desired
+  u_size = 4,                 # URL text size
+  filename = "./figures/imgfile.png", # Output file location
+  p_y=1.5,
+  p_family =  "montserrat"
+)
+

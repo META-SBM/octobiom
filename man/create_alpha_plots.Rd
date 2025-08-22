@@ -11,7 +11,10 @@ create_alpha_plots(
   method = "wilcox.test",
   colors,
   size = 10,
-  ncol = NULL
+  ncol = NULL,
+  text_size = 5,
+  bracket_nudge_y = 0,
+  font_family = "Times New Roman"
 )
 }
 \arguments{
@@ -26,6 +29,10 @@ create_alpha_plots(
 \item{size}{Base font size for plot elements (default: 10)}
 
 \item{ncol}{Number of columns in the combined plot (default: length(measures)).}
+
+\item{text_size}{size of text in figure}
+
+\item{bracket_nudge_y}{Vertical adjustment to nudge brackets (default 0)}
 
 \item{measure}{Alpha diversity measure to plot (default: 'Shannon')}
 }
@@ -49,7 +56,8 @@ result <- create_alpha_plots(
   ps_obj = my_phyloseq,
   col = "Treatment",
   measures = c("Shannon", "Simpson"),
-  colors = colors
+  colors = colors,
+  bracket_nudge_y = 0.1
 )
 print(p)
 }

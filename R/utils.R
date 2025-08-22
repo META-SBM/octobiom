@@ -41,3 +41,22 @@ show_palette <- function(name) {
                    axis.text.y = ggplot2::element_blank(),
                    axis.title = ggplot2::element_blank())
 }
+#' @title Setup Fonts for Plotting
+#' @description Initialize and load Times New Roman font for ggplot2
+#' @param font_family Font family name to load (default: "Times New Roman")
+#' @importFrom extrafont font_import loadfonts fonts
+#' @export
+setup_plot_fonts <- function(font_family = "Times New Roman") {
+  # Check if font is already available
+  if (!font_family %in% extrafont::fonts()) {
+    message("Importing fonts...")
+    extrafont::font_import(prompt = FALSE)
+    extrafont::loadfonts(device = "win", quiet = TRUE)
+  }
+
+  if (font_family %in% extrafont::fonts()) {
+    message(paste("Font", font_family, "successfully loaded"))
+  } else {
+    warning(paste("Font", font_family, "not found. Using default sans font."))
+  }
+}
