@@ -14,6 +14,7 @@ data(ps)
 force(ps)
 ```
 #Retention Analysis
+By filtering by detection and prevalence, you can estimate how many bacteria remain.
 ```{r}
 # Estimate how many taxa remain at different filtration levels.
 # Retention plots are commonly generated from compositional data, but other transformations can also be applied.
@@ -31,15 +32,18 @@ octobiom::retention_plot(phyloseq = ps_obj,detection_values = det, prevalence_va
 ```
 
 #Prevalence-Abundance plot
+Visualizes the relationship between taxon prevalence (frequency of presence) and mean abundance.
+We calculate average compositional abundance for each taxon across samples and apply a logarithmic transformation.
 ```{r,fig.height=8}
-# Visualizes the relationship between taxon prevalence (frequency of presence) and mean abundance.
-# We calculate average compositional abundance for each taxon across samples and apply a logarithmic transformation.
+
 ps_obj <- octobiom::prepare_phyloseq(ps,transformation = 'compositional',detection = 10,prev = 0.05,taxonomic_level = 'Species',first = 'filter')
 ?octobiom::prevalence_abundance_plot
-octobiom::prevalence_abundance_plot(ps_obj,top_n=15,zoom_plot = F,line_color = octobiom::get_palette("set_2_1")[1],
+ret_fig <- octobiom::prevalence_abundance_plot(ps_obj,top_n=15,zoom_plot = F,line_color = octobiom::get_palette("set_2_1")[1],
                                     point_color = octobiom::get_palette("set_2_1")[2])
+ret_fig$plot
 ```
 #Prevalence-Prevalence plot
+When comparing samples with, for example, different sequencing depths, a batch effect may arise. This effect is especially pronounced when comparing abundance between groups. Prevalence is also affected by batch effects, but to a lesser extent. In addition, the abundance of bacteria is not constant and can both increase and decrease under the influence of various factors. Then it may be interesting to estimate the prevalence of these bacteria in two groups.
 ```{r,fig.height=10,fig.width=10}
 # Assess bacterial prevalence between study groups.
 
@@ -49,13 +53,13 @@ ps_obj <- octobiom::prepare_phyloseq(ps,transformation = 'compositional',detecti
 
 zoom_list <- list(x = c(0.75, 1), y = c(0.75, 1))
 
-plot_list <- octobiom::compare_prevalence_across_group(ps_obj,column='bmi_group',zoom_window = zoom_list )
-plot_list
+plot_list <- octobiom::compare_prevalence_across_group(ps_obj,column='YEAR',zoom_window = zoom_list )
+plot_list$`2022 vs 2017`
 ```
-
 #Bray_time_point
+Since we have two time points, it is possible to calculate how much a person is similar to himself than to others. The algorithm calculates beta between two time points of the same person (within-subject) and all possible combinations of different people at time points (between-subjects).
 ```{r,fig.height=10,fig.width=10}
-#Since we have two time points, it is possible to calculate how much a person is similar to himself than to others. The algorithm calculates beta between two time points of the same person and all possible combinations of different people at time points.
+
 ps_obj <- octobiom::prepare_phyloseq(ps,transformation = 'compositional',detection = 0, prevalence = 0,taxonomic_level = 'Species',first = 'transform')
 
 detection_levels <- c(0, 0.001, 0.01)
@@ -74,6 +78,6 @@ beta_time <- analyze_beta_diversity_time_point(ps_obj,
                                   time_col = time_col,
                                   color_palette = color_palette
                                   )
-beta_time
+beta_time$violin_plot
 ```
 

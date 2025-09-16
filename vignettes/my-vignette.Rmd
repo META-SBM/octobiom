@@ -24,12 +24,14 @@ knitr::include_graphics('./figures/palette.png',dpi=300)
 We provide the ability to evaluate the distribution of metadata in a single figure. Variables can be either continuous or categorical. You only need to provide the names of the columns of interest.
 ```{r,fig.height=8}
 ?octobiom::plot_metadata_distributions
-features <- c('bmi','bmi_group','age_at_baseline','age_group','sex',
+features <- c('bmi','bmi_group','age_at_baseline','age_group',
+              'sex',
               "kidney.disease","chronic_bronchitis","smoking_status","YEAR",
               "diabetes" ,"tuberculosis" )
 
 #You can change number of rows and cols in  combined plot
-octobiom::plot_metadata_distributions(ps,features = features,color_palette = color_palette,nrow =3,ncol = 4)
+meta_fig_1 <- octobiom::plot_metadata_distributions(ps,features = features,color_palette = color_palette,nrow =3,ncol = 4)
+meta_fig_1
 ```
 #Prepare phyloseq
 When working with tables we often need to preprocess the data.Microbial data are often transformed ( compositional,clr), but not necessarily. Rare taxa are also filtered out. The package includes the ability to adjust whether you filter the count data first or transform the data and then filter. Agglomeration of data to the required taxonomic level is done at the beginning
@@ -120,7 +122,7 @@ permanova_results <- octobiom::plot_permanova(ps_obj,formula = formula, method =
 ```
 #Alpha
 There are many views in ecology and microbiology about how best to characterize biological diversity. One of the most common approaches is to estimate α-diversity, which reflects the species richness and evenness of distribution of species within a community. We provide the ability to calculate the Gini-Simpson, Shannon, chao1 index. In the first two cases, composite data is required. Therefore, the indices are calculated separately and then combined. You can pass either one variable for study or several
-```{r,fig.height=5}
+```{r,fig.height=4,fig.width=10}
 ps_obj <- octobiom::prepare_phyloseq(ps,transformation = 'compositional',detection = 100,prev = 0.05,taxonomic_level = 'Species',
                                      first = 'filter')
 ?octobiom::create_alpha_plots
@@ -129,7 +131,7 @@ features <- c('bmi_group','age_group')
 color_palette <- octobiom::get_palette("set_10_4")
 plot_alpha_list <- purrr::map(features, ~ {
   tryCatch({
-    octobiom::create_alpha_plots(ps_obj, col= .x, colors = color_palette,measure = c("Shannon",'Simpson'))
+    octobiom::create_alpha_plots(ps_obj, col= .x, colors = color_palette,measure = c("Shannon",'Simpson'),bracket_nudge_y = 0.1)
   }, error = function(e) {
     message(paste("Error in method:", .x))
     message(e$message)  # Print the error message
@@ -140,7 +142,7 @@ ps_obj <- octobiom::prepare_phyloseq(ps,transformation = 'NONE',detection = 100,
                                      first = 'filter')
 plot_alpha_list_chao <- purrr::map(features, ~ {
   tryCatch({
-    octobiom::create_alpha_plots(ps_obj, col= .x, colors = color_palette,measure = c("Chao1"))
+    octobiom::create_alpha_plots(ps_obj, col= .x, colors = color_palette,measure = c("Chao1"),bracket_nudge_y = 1)
   }, error = function(e) {
     message(paste("Error in method:", .x))
     message(e$message)  # Print the error message
@@ -150,7 +152,7 @@ plot_alpha_list_chao <- purrr::map(features, ~ {
 
 
 ggpubr::ggarrange(plot_alpha_list[[1]]$plots,plot_alpha_list_chao[[1]]$plots,widths = c(2,1))
-ggpubr::ggarrange(plot_alpha_list[[2]]$plots,plot_alpha_list_chao[[2]]$plots,widths = c(2,1))
+#ggpubr::ggarrange(plot_alpha_list[[2]]$plots,plot_alpha_list_chao[[2]]$plots,widths = c(2,1))
 ```
 #Beta
 When comparing two communities or assessing changes in a single community with an emphasis on similarities or differences in species composition, it is useful to use beta diversity analysis. This analysis characterizes the degree of difference or similarity between habitats based on their species composition and quantitative distribution of species. The first function allows you to plot one feature, while the second function allows you to plot 2 features on one figure.
@@ -180,6 +182,7 @@ plot_beta_list <- purrr::map(features, ~ {
   })
 })
 
+
 ?octobiom::create_ordination_plots_double
 db <- octobiom::create_ordination_plots_double(ps_obj,
                                      group = 'bmi_group',
@@ -187,13 +190,11 @@ db <- octobiom::create_ordination_plots_double(ps_obj,
                                      additional_group = 'age_group',
                                      shape_palette = c(1,2,3,4),
                                      additional_palette = palette_list$age_group)
-
-one_beta <- octobiom::create_ordination_plots_double(ps_obj,
-                                     group = 'bmi_group',
-                                     palette = palette_list$bmi_group,distance_method = 'euclidean'
-                                     )
+plot(plot_beta_list[[1]])
+plot(db)
 ```
 #stacked barplot hierarchical
+It is important to assess the distribution of bacteria across samples to evaluate potential batch effects and examine sample clustering by groups. For this purpose, we propose using a hierarchical clustering function.
 ```{r,fig.height=8}
 ps_obj <- octobiom::prepare_phyloseq(ps,transformation = 'compositional',detection = 10,prev = 0.1,taxonomic_level = 'Species',
                                      first = 'filter')
@@ -204,31 +205,33 @@ color_palette <- octobiom::get_palette("set_20_2")
 color_palette <- c('white',color_palette)
 colors_annotation <- list('YEAR' = YEAR_colors,'bmi_group' = bmi_colors,
                                                                      'age_group' = age_colors,'sex' = sex_colors)
-octobiom::barplot_hierarchical(ps_obj,taxrank="Species", top = 20, feature = features,
+hier_fig <- octobiom::barplot_hierarchical(ps_obj,taxrank="Species", top = 20, feature = features,
                                       dist = 'bray',colors_barplot = color_palette,
                                    colors_annotation = colors_annotation,decreasing = T,
                                    size = c(0.5,0.2,0.2,0.2,0.2,5))
-
+hier_fig$combined_plot
 ```
 #correlation between features and taxa
 ```{r,fig.height=4}
 ?octobiom::prepare_phyloseq
 
-ps_obj <- octobiom::prepare_phyloseq(ps,transformation = 'clr',detection = 10,prev = 0.10,taxonomic_level = 'Species',
+ps_obj <- octobiom::prepare_phyloseq(ps,transformation = 'clr',detection = 10,prev = 0.20,taxonomic_level = 'Species',
                                      first = 'filter')
 
 feature_colors <- c(
   "age_at_baseline" = "#ff9999",
   "bmi" = "#99ccff"
 )
+
 ?build_multi_correlation_network
 network_correlation_results <- octobiom::build_multi_correlation_network(
   ps_obj,
   features = c("age_at_baseline", "bmi"),
   tax_rank = "Species",
   cor_method = 'pearson',
-  feature_colors = feature_colors
+  feature_colors = feature_colors,min_corr_strenght = 0.2
+  
 )
-network_correlation_results
+network_correlation_results[[2]]
 ```
 

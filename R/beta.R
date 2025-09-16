@@ -18,7 +18,7 @@
 #'                (default: 10, set to NULL to show all significant taxa)
 #' @param len_axis Scaling factor for taxa vectors (default: 1)
 #' @param ratio Parameter indicating the ratio of figures
-#' @param font_family Font family to use (default: "Times New Roman")
+#' @param font_family Font family to use (default: "sans")
 #'
 #' @return A grid.arrange object containing the ordination plot with marginal distributions
 #'
@@ -69,7 +69,7 @@ create_ordination_plots <- function(ps_obj, method = "PCoA", distance_method = "
                                     group, size = 10, palette, taxa_plot = TRUE,
                                     taxrank = "Genus", top_taxa = 10,
                                     len_axis = 1, ratio = c(1, 4),
-                                    font_family = "Times New Roman") {
+                                    font_family = "sans") {
 
   # Validate input
   if (!inherits(ps_obj, "phyloseq")) stop("Input must be a phyloseq object")

@@ -16,7 +16,7 @@ create_ordination_plots(
   top_taxa = 10,
   len_axis = 1,
   ratio = c(1, 4),
-  font_family = "Times New Roman"
+  font_family = "sans"
 )
 }
 \arguments{
@@ -44,7 +44,7 @@ create_ordination_plots(
 
 \item{ratio}{Parameter indicating the ratio of figures}
 
-\item{font_family}{Font family to use (default: "Times New Roman")}
+\item{font_family}{Font family to use (default: "sans")}
 }
 \value{
 A grid.arrange object containing the ordination plot with marginal distributions

@@ -25,7 +25,7 @@ plot_alpha_div <- function(ps_obj, group, color, measure
 #' @param ncol Number of columns in the combined plot (default: length(measures)).
 #' @param text_size size of text in figure
 #' @param bracket_nudge_y Vertical adjustment to nudge brackets (default 0)
-#' @param font_family Font family to use (default: "Times New Roman")
+#' @param font_family Font family to use (default: "sans")
 #'
 #' @return A list containing:
 #' \itemize{
@@ -57,7 +57,7 @@ create_alpha_plots <- function(ps_obj, col,
                                measures = c("Shannon"),
                                method = "wilcox.test",
                                colors, size = 10,ncol = NULL, text_size = 5,bracket_nudge_y = 0,
-                               font_family = "Times New Roman") {
+                               font_family = "sans") {
 
   plot_list <- list()
   stat_list <- list()
@@ -86,7 +86,7 @@ create_alpha_plots <- function(ps_obj, col,
       ggplot2::theme(
         axis.text.x = element_text(angle = 45, hjust = 1, family = font_family, size = size,color = 'black'),
         axis.text.y = element_text(family = font_family, size = size,color = 'black'),
-        axis.title = element_text(family = font_family, size = size, face = "bold",,color = 'black'),
+        axis.title = element_text(family = font_family, size = size, face = "bold",color = 'black'),
         legend.text = element_text(family = font_family, size = size),
         legend.title = element_text(family = font_family, size = size, face = "bold"),
         plot.title = element_text(face = "bold", hjust = 0.5, family = font_family),

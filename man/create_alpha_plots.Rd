@@ -14,7 +14,7 @@ create_alpha_plots(
   ncol = NULL,
   text_size = 5,
   bracket_nudge_y = 0,
-  font_family = "Times New Roman"
+  font_family = "sans"
 )
 }
 \arguments{
@@ -34,7 +34,7 @@ create_alpha_plots(
 
 \item{bracket_nudge_y}{Vertical adjustment to nudge brackets (default 0)}
 
-\item{font_family}{Font family to use (default: "Times New Roman")}
+\item{font_family}{Font family to use (default: "sans")}
 
 \item{measure}{Alpha diversity measure to plot (default: 'Shannon')}
 }
