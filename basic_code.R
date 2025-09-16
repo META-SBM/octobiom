@@ -31,6 +31,10 @@ usethis::use_github()
 usethis::use_pkgdown_github_pages()
 usethis::use_pkgdown()
 pkgdown::build_site()
+usethis::use_git_config(
+  user.name = "Kuzmichenko Polina",
+  user.email = "kuzmichenko.p.a@gmail.com"
+)
 #install.packages("hexSticker")
 library(hexSticker)
 knitr::include_graphics('figures/octobiom.png',dpi=300)
@@ -56,4 +60,5 @@ sticker(
   p_y=1.5,
   p_family =  "montserrat"
 )
+usethis::git_sitrep()
 

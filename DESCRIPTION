@@ -60,4 +60,4 @@ Suggests:
     rmarkdown,
     testthat (>= 3.0.0)
 Config/testthat/edition: 3
-URL: https://meta-sbm.github.io/octobiom/
+URL: https://META-SBM.github.io/octobiom
