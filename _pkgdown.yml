@@ -1,4 +1,16 @@
 url: https://META-SBM.github.io/octobiom
 template:
   bootstrap: 5
+  light-switch: true
+  bslib:
+      base_font: {google: "Roboto"}
+      heading_font: {google: "Roboto Slab"}
+      code_font: {google: "JetBrains Mono"}
 
+navbar:
+  left:
+    - text: [intro, reference, articles]
+      href: index.html
+    - icon: "imgfile.png"
+      href: "#"
+  right: [search, github, lightswitch]
