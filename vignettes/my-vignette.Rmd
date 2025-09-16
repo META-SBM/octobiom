@@ -22,7 +22,7 @@ knitr::include_graphics('./figures/palette.png',dpi=300)
 ```
 #Metadata
 We provide the ability to evaluate the distribution of metadata in a single figure. Variables can be either continuous or categorical. You only need to provide the names of the columns of interest.
-```{r,fig.height=8}
+```{r,fig.height=6,fig.width=10}
 ?octobiom::plot_metadata_distributions
 features <- c('bmi','bmi_group','age_at_baseline','age_group',
               'sex',
@@ -45,7 +45,7 @@ knitr::include_graphics('./figures/pipeline_prepare_phyloseq.png',dpi=300)
 #HEATMAP
 It is recommended to evaluate the structure of the data before analysis to exclude bad samples.Heatmap helps to estimate possible outliers and evaluate the structure of the data. The heatmap can also show the distribution of features across samples. We will use metadata like year, bmi, age and sex. Only categorical features can be transmitted.
 
-```{r,fig.height=12}
+```{r,fig.height=6,fig.width=8}
 ps_obj <- octobiom::prepare_phyloseq(ps,transformation = 'clr',detection = 10,prev = 0.05,taxonomic_level = 'Species',
                                      first = 'filter')
 ?octobiom::generate_microbiome_heatmap
@@ -102,7 +102,7 @@ octobiom::generate_microbiome_heatmap(ps_obj,tax_level_annotation = 'Phylum',fea
 
 #PERMANOVA
 To estimate the contribution of metadata to the microbiome variance , we will use the PERMANOVA test.
-```{r,fig.width=10,fig,fig.height=5}
+```{r,fig.width=10,fig.height=5}
 ?plot_permanova
 ps_obj <- octobiom::prepare_phyloseq(ps,transformation = 'compositional',detection = 10,prev = 0.05,taxonomic_level = 'Species',
                                      first = 'filter')
@@ -118,7 +118,7 @@ category_order <- c('comorbidities','sociodemographic','behavioral\n factors','t
 cols_meta$category <- factor(cols_meta$category, levels = category_order)
 color_palette <- octobiom::get_palette("set_10_3")
 permanova_results <- octobiom::plot_permanova(ps_obj,formula = formula, method = 'bray',cols_meta = cols_meta,palette = color_palette )
-
+plot(permanova_results[[2]])
 ```
 #Alpha
 There are many views in ecology and microbiology about how best to characterize biological diversity. One of the most common approaches is to estimate α-diversity, which reflects the species richness and evenness of distribution of species within a community. We provide the ability to calculate the Gini-Simpson, Shannon, chao1 index. In the first two cases, composite data is required. Therefore, the indices are calculated separately and then combined. You can pass either one variable for study or several
@@ -195,7 +195,7 @@ plot(db)
 ```
 #stacked barplot hierarchical
 It is important to assess the distribution of bacteria across samples to evaluate potential batch effects and examine sample clustering by groups. For this purpose, we propose using a hierarchical clustering function.
-```{r,fig.height=8}
+```{r,fig.height=8,fig.width=10}
 ps_obj <- octobiom::prepare_phyloseq(ps,transformation = 'compositional',detection = 10,prev = 0.1,taxonomic_level = 'Species',
                                      first = 'filter')
 ?octobiom::barplot_hierarchical
@@ -212,7 +212,7 @@ hier_fig <- octobiom::barplot_hierarchical(ps_obj,taxrank="Species", top = 20, f
 hier_fig$combined_plot
 ```
 #correlation between features and taxa
-```{r,fig.height=4}
+```{r,fig.height=4,fig.width=6}
 ?octobiom::prepare_phyloseq
 
 ps_obj <- octobiom::prepare_phyloseq(ps,transformation = 'clr',detection = 10,prev = 0.20,taxonomic_level = 'Species',
