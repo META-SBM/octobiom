@@ -118,11 +118,10 @@ category_order <- c('comorbidities','sociodemographic','behavioral\n factors','t
 cols_meta$category <- factor(cols_meta$category, levels = category_order)
 color_palette <- octobiom::get_palette("set_10_3")
 permanova_results <- octobiom::plot_permanova(ps_obj,formula = formula, method = 'bray',cols_meta = cols_meta,palette = color_palette )
-plot(permanova_results[[2]])
 ```
 #Alpha
 There are many views in ecology and microbiology about how best to characterize biological diversity. One of the most common approaches is to estimate α-diversity, which reflects the species richness and evenness of distribution of species within a community. We provide the ability to calculate the Gini-Simpson, Shannon, chao1 index. In the first two cases, composite data is required. Therefore, the indices are calculated separately and then combined. You can pass either one variable for study or several
-```{r,fig.height=4,fig.width=10}
+```{r,fig.height=6,fig.width=10}
 ps_obj <- octobiom::prepare_phyloseq(ps,transformation = 'compositional',detection = 100,prev = 0.05,taxonomic_level = 'Species',
                                      first = 'filter')
 ?octobiom::create_alpha_plots
@@ -131,7 +130,9 @@ features <- c('bmi_group','age_group')
 color_palette <- octobiom::get_palette("set_10_4")
 plot_alpha_list <- purrr::map(features, ~ {
   tryCatch({
+    suppressWarnings(
     octobiom::create_alpha_plots(ps_obj, col= .x, colors = color_palette,measure = c("Shannon",'Simpson'),bracket_nudge_y = 0.1)
+    )
   }, error = function(e) {
     message(paste("Error in method:", .x))
     message(e$message)  # Print the error message
@@ -142,7 +143,9 @@ ps_obj <- octobiom::prepare_phyloseq(ps,transformation = 'NONE',detection = 100,
                                      first = 'filter')
 plot_alpha_list_chao <- purrr::map(features, ~ {
   tryCatch({
+    suppressWarnings(
     octobiom::create_alpha_plots(ps_obj, col= .x, colors = color_palette,measure = c("Chao1"),bracket_nudge_y = 1)
+    )
   }, error = function(e) {
     message(paste("Error in method:", .x))
     message(e$message)  # Print the error message
@@ -168,13 +171,14 @@ palette_list <- list(
  )
 ?octobiom::create_ordination_plots
 #Let's analyze beta diversity
-features <- c('bmi_group','age_group')
+features <- c('bmi_group')#,'age_group')
 color_palette <- octobiom::get_palette("set_10_4")
 
 plot_beta_list <- purrr::map(features, ~ {
   tryCatch({
+    suppressWarnings(
     octobiom::create_ordination_plots(ps_obj, group= .x, 
-                                      distance_method = "euclidean",palette = color_palette,taxa_plot = FALSE)
+                                      distance_method = "euclidean",palette = color_palette,taxa_plot = FALSE))
   }, error = function(e) {
     message(paste("Error in method:", .x))
     message(e$message)  # Print the error message
@@ -212,7 +216,7 @@ hier_fig <- octobiom::barplot_hierarchical(ps_obj,taxrank="Species", top = 20, f
 hier_fig$combined_plot
 ```
 #correlation between features and taxa
-```{r,fig.height=4,fig.width=6}
+```{r,fig.height=8,fig.width=8}
 ?octobiom::prepare_phyloseq
 
 ps_obj <- octobiom::prepare_phyloseq(ps,transformation = 'clr',detection = 10,prev = 0.20,taxonomic_level = 'Species',
