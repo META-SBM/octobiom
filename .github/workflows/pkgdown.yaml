@@ -7,7 +7,6 @@ on:
 jobs:
   pkgdown:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
 
@@ -22,8 +21,9 @@ jobs:
           Rscript -e "pkgdown::build_site(install = FALSE)"
 
       - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./docs
-          force_orphan: true
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add docs/
+          git commit -m "Deploy to GitHub Pages" || echo "No changes to commit"
+          git push origin HEAD:gh-pages --force
