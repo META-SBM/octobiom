@@ -16,8 +16,7 @@ jobs:
 
       - name: Install pkgdown from GitHub
         run: |
-          Rscript -e "install.packages('remotes', repos = 'https://cloud.r-project.org')"
-          Rscript -e "remotes::install_github('r-lib/pkgdown')"
+          Rscript -e "install.packages('pkgdown')"
 
       - name: Build minimal site
         run: |
