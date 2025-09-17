@@ -3,10 +3,6 @@ name: pkgdown
 on:
   push:
     branches: [main, master]
-  pull_request:
-  release:
-    types: [published]
-  workflow_dispatch:
 
 jobs:
   pkgdown:
@@ -28,13 +24,20 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libharfbuzz-dev libfribidi-dev libfreetype6-dev libpng-dev libtiff5-dev libjpeg-dev
 
-      - name: Install R dependencies
+      - name: Install Bioconductor and CRAN packages
         run: |
-          Rscript -e "install.packages('remotes', repos = 'https://cloud.r-project.org')"
-          Rscript -e "install.packages(c('devtools', 'pkgdown'), repos = 'https://cloud.r-project.org')"
+          Rscript -e "install.packages('BiocManager', repos = 'https://cloud.r-project.org')"
+          Rscript -e "BiocManager::install('phyloseq')"
+          Rscript -e "install.packages(c('remotes', 'devtools', 'pkgdown', 'extrafont'), repos = 'https://cloud.r-project.org')"
+
+      - name: Install GitHub packages
+        run: |
           Rscript -e "remotes::install_github('david-barnett/microViz')"
-          Rscript -e "remotes::install_github('mikemc/speedyseq')"
-          Rscript -e "install.packages('extrafont', repos = 'https://cloud.r-project.org')"
+          Rscript -e "remotes::install_github('mikemc/speedyseq', dependencies = TRUE)"
+          Rscript -e "remotes::install_github('wch/extrafont')"
+
+      - name: Install package dependencies
+        run: |
           Rscript -e "devtools::install_deps(dependencies = TRUE)"
 
       - name: Build site
