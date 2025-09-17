@@ -13,35 +13,13 @@ jobs:
 
       - uses: r-lib/actions/setup-r@v2
 
-      - name: Install system dependencies for R packages
+      - name: Install pkgdown
         run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            libcurl4-openssl-dev \
-            libssl-dev \
-            libfontconfig1-dev \
-            libharfbuzz-dev \
-            libfribidi-dev
-
-      - name: Install pkgdown with dependencies
-        run: |
-          Rscript -e "install.packages('remotes', repos = 'https://cloud.r-project.org')"
-          Rscript -e "remotes::install_cran('pkgdown', repos = 'https://cloud.r-project.org')"
-      - name: Install required packages
-        run: |
-          Rscript -e "BiocManager::install('phyloseq')"
-          Rscript -e "install.packages(c('remotes', 'knitr', 'rmarkdown'), repos = 'https://cloud.r-project.org')"
-          Rscript -e "remotes::install_github('wch/extrafont')"
-          Rscript -e "remotes::install_github('david-barnett/microViz')"
-          Rscript -e "remotes::install_github('mikemc/speedyseq', dependencies = TRUE)"
-
-      - name: Build site without installing package dependencies
-        run: |
-          Rscript -e "pkgdown::build_site(install = FALSE)"
+          Rscript -e "install.packages('pkgdown', repos = 'https://cloud.r-project.org')"
 
       - name: Build site
         run: |
-          Rscript -e "pkgdown::build_site()"
+          Rscript -e "pkgdown::build_site(install = FALSE)"
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
