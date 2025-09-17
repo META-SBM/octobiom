@@ -8,18 +8,12 @@ on:
     types: [published]
   workflow_dispatch:
 
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
 jobs:
   pkgdown:
     runs-on: ubuntu-latest
-    concurrency:
-      group: pkgdown-${{ github.event_name != 'pull_request' || github.run_id }}
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+
     steps:
       - uses: actions/checkout@v4
 
@@ -29,22 +23,27 @@ jobs:
         with:
           use-public-rspm: true
 
-      - uses: r-lib/actions/setup-r-dependencies@v2
-        with:
-          extra-packages: pkgdown
-          needs: website
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libharfbuzz-dev libfribidi-dev libfreetype6-dev libpng-dev libtiff5-dev libjpeg-dev
+
+      - name: Install R dependencies
+        run: |
+          Rscript -e "install.packages('remotes', repos = 'https://cloud.r-project.org')"
+          Rscript -e "install.packages(c('devtools', 'pkgdown'), repos = 'https://cloud.r-project.org')"
+          Rscript -e "remotes::install_github('david-barnett/microViz')"
+          Rscript -e "remotes::install_github('mikemc/speedyseq')"
+          Rscript -e "install.packages('extrafont', repos = 'https://cloud.r-project.org')"
+          Rscript -e "devtools::install_deps(dependencies = TRUE)"
 
       - name: Build site
-        run: Rscript -e 'pkgdown::build_site()'
-
-      - name: Setup Pages
-        uses: actions/configure-pages@v4
-
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: docs
+        run: |
+          Rscript -e "pkgdown::build_site()"
 
       - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./docs
+          force_orphan: true
